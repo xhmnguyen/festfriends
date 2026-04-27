@@ -1,0 +1,1680 @@
+/* =========================================================
+   1. RESET & BASE
+============================================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Roboto', sans-serif;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #fdf2f8, #f0f9ff, #fef9c3);
+  color: #111;
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* =========================================================
+   2. LAYOUT / HELPERS
+============================================================ */
+.container {
+  width: 96%;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 24px 0 40px;
+  flex: 1;
+}
+
+.flex {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.hidden {
+  display: none;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.mt-20 {
+  margin-top: 20px;
+}
+
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+.error-message {
+  margin-bottom: 20px;
+  text-align: center;
+  font-weight: 600;
+  color: #b42318;
+}
+
+.section-topbar {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.section-topbar-double {
+  gap: 12px;
+}
+
+/* =========================================================
+   3. HEADER / NAV
+============================================================ */
+header,
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: #fff;
+}
+
+.top-nav .left-nav {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.top-nav .logo {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #000;
+}
+
+.top-nav .nav-links a {
+  margin: 0 10px;
+  font-weight: 500;
+  color: #000;
+  transition: color 0.2s ease;
+}
+
+.top-nav .nav-links a:hover {
+  color: #555;
+}
+
+/* =========================================================
+   4. PROFILE / AVATARS
+============================================================ */
+.profile,
+.profile-icon,
+.profile-icon-img,
+.post-user-avatar-wrap,
+.member-avatar-img,
+.member-avatar-fallback,
+.profile-preview,
+.profile-preview-fallback {
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+.profile,
+.profile-icon,
+.profile-icon-img {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.profile,
+.profile-icon,
+.post-user-avatar,
+.member-avatar-fallback,
+.profile-preview-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #111;
+  color: #fff;
+  font-weight: 700;
+}
+
+.profile-icon-img,
+.member-avatar-img {
+  object-fit: cover;
+}
+
+.post-user-avatar-wrap {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  flex-shrink: 0;
+  background: #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.post-user-avatar {
+  width: 100%;
+  height: 100%;
+}
+
+.general-post-card .post-user-avatar-img {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  display: block;
+  border-radius: 0;
+}
+
+.member-avatar-img,
+.member-avatar-fallback {
+  width: 50px;
+  height: 50px;
+  margin-bottom: 6px;
+}
+
+.profile-preview,
+.profile-preview-fallback {
+  width: 110px;
+  height: 110px;
+  margin: 0 auto;
+}
+
+.profile-preview {
+  object-fit: cover;
+}
+
+.profile-preview-fallback {
+  font-size: 1.8rem;
+}
+
+.group-image-preview,
+.group-image-fallback {
+  width: 100%;
+  max-width: 400px;
+  height: 200px;
+  margin: 0 auto;
+  border-radius: 12px;
+}
+
+.group-image-preview {
+  object-fit: cover;
+}
+
+.group-image-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #111;
+  color: #fff;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+/* =========================================================
+   5. BUTTONS / LINKS
+============================================================ */
+button {
+  font: inherit;
+  margin: 0;
+  border: none;
+  background: transparent;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #f3f3f3;
+  color: #111;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+      background-color: #333;
+    color: #fff;
+    border: 1px solid #333;
+  
+}
+
+
+.btn:hover {
+    background-color: #222;
+    border-color: #222;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.text-action-btn,
+.vote-btn,
+a.text-action-btn,
+a.vote-btn,
+.members-remove-toggle,
+.remove-member-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.text-action-btn,
+.vote-btn,
+a.text-action-btn,
+a.vote-btn,
+.members-remove-toggle {
+  font-size: 0.85rem;
+  color: #777;
+}
+
+.text-action-btn:hover,
+.vote-btn:hover,
+a.text-action-btn:hover,
+a.vote-btn:hover,
+.members-remove-toggle:hover {
+  color: #444;
+}
+
+.delete-action,
+.remove-member-btn {
+  color: #b42318 !important;
+}
+
+.selected-vote {
+  color: #111 !important;
+  font-weight: 600;
+}
+
+.delete-btn {
+  background: #fbe4e4;
+  color: #f96c6c;
+  border: 1px solid #efc2c2;
+}
+
+.delete-btn:hover {
+  background: #f7d6d6;
+}
+
+
+
+.create-group-btn {
+  background: #fff !important;
+  color: #000;
+  border: 1px solid #ddd;
+}
+
+.create-group-btn:hover {
+  background: #f3f4f6 !important;
+  color: #000;
+}
+
+.inline-link {
+  color: #111;
+  text-decoration: underline;
+}
+
+.inline-link:hover {
+  color: #555;
+}
+
+/* =========================================================
+   6. FORMS
+============================================================ */
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  margin-bottom: 15px;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background: #fff;
+  color: #111;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid #111;
+  border-color: #111;
+}
+
+textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  font-weight: 500;
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+  margin-bottom: 20px;
+}
+
+.search-bar input {
+  width: 300px;
+  max-width: 100%;
+  margin-bottom: 0;
+}
+
+.search-bar .btn {
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   7. CARDS
+============================================================ */
+.card,
+.concerts-card,
+.timeline-card,
+.tab-content,
+.group-header {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #cbcbcb;
+  outline: none;
+  box-shadow: none;
+}
+
+.card {
+  padding: 16px;
+  transition: none;
+}
+
+.card:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.card h3 {
+  margin-bottom: 8px;
+}
+
+.card p {
+  margin-bottom: 6px;
+}
+
+.concerts-card {
+  padding: 16px;
+  margin-bottom: 18px;
+}
+
+.tab-content {
+  margin-top: 20px;
+  padding: 20px;
+}
+
+.timeline-card {
+  flex: 1;
+  padding: 16px;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+  padding: 18px;
+}
+
+/* =========================================================
+   8. GROUP / CONCERT CARDS
+============================================================ */
+.group-link,
+.concert-link,
+.concert-link-wrapper {
+  width: calc((100% - 48px) / 4);
+}
+
+.group-link,
+.concert-link {
+  display: block;
+  color: inherit;
+}
+
+.concert-link-wrapper {
+  flex: 0 0 calc((100% - 48px) / 4);
+  max-width: calc((100% - 48px) / 4);
+}
+
+.concert-link-wrapper .concert-link {
+  width: 100%;
+}
+
+.group-card {
+  width: 100%;
+  height: 285px;
+  overflow: hidden;
+}
+
+.concert-card {
+  width: 100%;
+  height: 100%;
+}
+
+.group-card img,
+.concert-card img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.card-body {
+  padding-top: 9px;
+}
+
+.group-name,
+.concert-name {
+  margin-bottom: 4px;
+  font-weight: 700;
+  color: #000;
+}
+
+.group-description,
+.concert-location,
+.concert-dates {
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.group-info,
+.group-owner {
+  font-size: 0.82rem;
+  color: #777;
+}
+
+.group-header-img {
+  width: 300px;
+  height: 165px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.group-header-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.group-header-name {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.group-header-description {
+  font-size: 1rem;
+  color: #555;
+}
+
+.group-header-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  font-size: 0.88rem;
+  color: #777;
+}
+
+/* =========================================================
+   9. CONNECTED TABS
+============================================================ */
+.tabs,
+.concert-tabs {
+  display: flex;
+  justify-content: center;
+  margin: 22px 0 24px;
+}
+
+.tabs-inner,
+.concert-tabs-inner {
+  display: inline-flex;
+  border: 1px solid #cbcbcb;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.tab,
+.concert-tab {
+  padding: 8px 18px;
+  border: none;
+  border-right: 1px solid #cbcbcb;
+  background: #fff;
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tab:last-child,
+.concert-tab:last-child {
+  border-right: none;
+}
+
+.tab:hover,
+.concert-tab:hover {
+  background: #f5f5f5;
+  color: #444;
+}
+
+.tab.active,
+.concert-tab.active {
+  background: #f0f0f0;
+  color: #444;
+}
+
+/* =========================================================
+   10. POSTS / PLANNING GRIDS
+============================================================ */
+.posts-grid,
+.planning-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.general-post-card {
+  max-width: 850px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.general-post-card:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.planning-card {
+  flex: 0 0 calc((100% - 48px) / 4);
+  width: calc((100% - 48px) / 4);
+  max-width: calc((100% - 48px) / 4);
+  margin: 0;
+}
+
+.general-post-top,
+.general-post-bottom {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.general-post-top {
+  margin-bottom: 14px;
+}
+
+.general-post-bottom {
+  margin-top: 16px;
+}
+
+.general-post-top-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.general-post-heading,
+.general-post-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.general-post-content {
+  margin-top: 4px;
+}
+
+.general-post-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #111;
+  word-break: break-word;
+}
+
+.general-post-content p {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.post-image-small {
+  max-width: 250px;   /* controls size */
+  height: auto;       /* keeps aspect ratio */
+  object-fit: contain; /* prevents cropping/stretching */
+  border-radius: 0;   /* removes rounded edges */
+  display: block;
+  margin-top: 10px;
+}
+
+.post-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.post-actions form,
+.vote-row form,
+.remove-member-form,
+.remove-concert-form {
+  margin: 0;
+  padding: 0;
+}
+
+.post-actions form,
+.vote-row form {
+  display: inline-flex;
+  width: auto;
+}
+
+.post-actions input,
+.vote-row input {
+  display: none;
+}
+
+.vote-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.vote-btn {
+  align-items: center;
+  gap: 5px;
+}
+
+.vote-emoji {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.vote-count {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.post-timestamp {
+  flex-shrink: 0;
+  font-size: 0.88rem;
+  color: #666;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   11. BUDGET
+============================================================ */
+.budget-layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.budget-layout .card {
+  flex: 1 1 calc((100% - 16px) / 2);
+  max-width: calc((100% - 16px) / 2);
+  margin: 0;
+}
+
+.budget-layout .card,
+.budget-layout .card:hover,
+.budget-layout .budget-card,
+.budget-layout .budget-card:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
+
+/* =========================================================
+   12. SET TIMES
+============================================================ */
+.stage-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.stage-pill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #111;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.timeline-date-heading {
+  margin: 20px 0 12px;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.timeline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.timeline-time {
+  min-width: 140px;
+  font-weight: 600;
+  color: #555;
+}
+
+/* =========================================================
+   13. MODALS
+============================================================ */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.modal-content {
+  position: relative;
+  width: 100%;
+  max-width: 750px;
+  max-height: 90%;
+  overflow-y: auto;
+  padding: 30px;
+  border-radius: 16px;
+  background: #fff;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.close-btn {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #555;
+  cursor: pointer;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================================================
+   14. MEMBERS
+============================================================ */
+.members-card {
+  padding: 18px;
+}
+
+.members-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.members-grid {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.member-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.member-name {
+  font-size: 0.8rem;
+  line-height: 1.2;
+  color: #333;
+  word-break: break-word;
+}
+
+.remove-member-form {
+  margin-top: 4px;
+}
+
+.remove-member-form.is-hidden,
+.remove-concert-form.is-hidden {
+  display: none;
+}
+
+.remove-member-btn {
+  font-size: 0.75rem;
+}
+
+.remove-member-btn:hover {
+  text-decoration: underline;
+}
+
+.remove-concert-form {
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* =========================================================
+   15. FOOTER
+============================================================ */
+footer {
+  width: 100%;
+  margin-top: auto;
+  padding: 30px 0;
+  background: #fff;
+  color: #888;
+  text-align: center;
+}
+
+/* =========================================================
+   16. CONCERT TAB PAGES
+============================================================ */
+.planning-summary-card {
+  flex: 0 0 calc((100% - 48px) / 4);
+  width: calc((100% - 48px) / 4);
+  border: 1px solid #cbcbcb;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.planning-summary-body {
+  padding: 13px;
+}
+
+.planning-summary-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.planning-summary-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.planning-summary-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.planning-summary-line {
+  margin-bottom: 4px;
+  font-size: 0.88rem;
+  color: #444;
+}
+
+.planning-expand-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.planning-expand-btn {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #666;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.planning-expand-btn:hover {
+  text-decoration: underline;
+}
+
+.planning-extra {
+  display: none;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #ececec;
+}
+
+.planning-summary-card.expanded .planning-extra {
+  display: block;
+}
+
+.planning-extra-image {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  background: #f4f4f4;
+}
+
+.planning-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.planning-meta-row .left,
+.planning-meta-row .right {
+  font-size: 0.9rem;
+}
+
+.planning-summary-card {
+  padding: 10px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.planning-summary-card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12) !important;
+}
+
+.planning-summary-card .planning-extra-image {
+  height: 180px;
+  margin-bottom: 10px;
+}
+
+/* make housing modal less wide + taller feel */
+.housing-details-modal {
+  max-width: 600px;   /* was 850 */
+  width: 90%;
+  min-height: 600px;
+  font-size: 1.05rem;
+  padding: 26px;
+}
+
+/* make image narrower + not overwhelming */
+.housing-details-modal .planning-extra-image {
+  width: 100%;
+  max-width: 420px;     /* limits width */
+  height: 220px;        /* smaller height */
+  object-fit: cover;
+  margin: 0 auto 18px;  /* centers image */
+  border-radius: 12px;
+}
+
+.housing-modal-title {
+  font-size: 1.8rem;
+  margin-bottom: 14px;
+}
+
+/* =========================================================
+   17. SET TIMES GRID
+============================================================ */
+.stage-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0 22px;
+}
+
+.stage-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+}
+
+.stage-filter-pill.active {
+  border-color: #111;
+  font-weight: 600;
+}
+
+.stage-color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.stage-pill-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.remove-stage-form {
+  margin: 0;
+}
+
+.remove-stage-form.is-hidden {
+  display: none;
+}
+
+.timeline-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.timeline-day-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 18px;
+  border: 1px solid #cbcbcb;
+  box-shadow: none;
+}
+
+.timeline-grid {
+  display: grid;
+  grid-template-columns: 86px repeat(var(--stage-count), minmax(180px, 1fr));
+  gap: 0;
+  overflow-x: auto;
+  border: 1px solid #ececec;
+  border-radius: 18px;
+}
+
+.timeline-header-cell {
+  min-width: 180px;
+  padding: 12px;
+  font-weight: 700;
+  border-bottom: 1px solid #ececec;
+  background: #fafafa;
+}
+
+.timeline-time-header {
+  min-width: 86px;
+}
+
+.timeline-body-time {
+  position: relative;
+  background-image: linear-gradient(to bottom, transparent calc(100% - 1px), #f0f0f0 1px);
+  background-size: 100% 80px;
+}
+
+.timeline-time-label {
+  position: absolute;
+  left: 10px;
+  transform: translateY(-50%);
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.timeline-column {
+  position: relative;
+  border-left: 1px solid #ececec;
+  background-image: linear-gradient(to bottom, transparent calc(100% - 1px), #f0f0f0 1px);
+  background-size: 100% 80px;
+}
+
+.timeline-event {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  border-radius: 14px;
+  padding: 10px 12px;
+  overflow: hidden;
+  border-left: 4px solid;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.timeline-event-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.artist-interest-form {
+  margin: 0;
+}
+
+.artist-interest-btn {
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+
+.artist-interest-btn.selected-artist-interest {
+  text-decoration: underline;
+}
+
+.timeline-event-time,
+.timeline-event-user {
+  font-size: 0.85rem;
+  line-height: 1.25;
+}
+
+.timeline-inline-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.timeline-event-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: auto;
+  gap: 10px;
+  padding-top: 10px;
+}
+
+.timeline-going-count {
+  font-size: 0.8rem;
+  white-space: nowrap;
+  text-align: right;
+  margin-left: auto;
+}
+
+/* =========================================================
+   18. GALLERY
+============================================================ */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px; /* tighter spacing */
+}
+
+.gallery-item {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.gallery-item:hover {
+  transform: scale(1.03);
+}
+
+.gallery-img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover; /* THIS removes white gaps */
+  border-radius: 12px;
+}
+
+.gallery-modal-container {
+  position: relative;
+  width: 90%;
+  max-width: 1000px;
+  max-height: 92vh;
+  margin: auto;
+  padding: 20px;
+  background: #fff;
+  border-radius: 16px;
+  overflow-y: auto;
+}
+
+.gallery-view-img {
+  width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+.gallery-modal-delete {
+  position: absolute;
+  top: 18px;
+  right: 60px;
+  margin: 0;
+}
+
+.gallery-view-caption {
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.gallery-view-meta {
+  display: flex;
+  justify-content: space-between;
+  color: #777;
+  font-size: 0.9rem;
+}
+
+/* =========================================================
+   19. GLOBAL SHADOW REMOVAL
+============================================================ */
+.card,
+.timeline-card,
+.concerts-card,
+.group-header,
+.tab-content {
+  box-shadow: none !important;
+}
+
+/* =========================================================
+   20. RESPONSIVE
+============================================================ */
+@media (max-width: 1200px) {
+  .members-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .group-link,
+  .concert-link,
+  .concert-link-wrapper,
+  .planning-card,
+  .planning-summary-card {
+    flex: 0 0 calc((100% - 32px) / 3);
+    width: calc((100% - 32px) / 3);
+    max-width: calc((100% - 32px) / 3);
+  }
+
+  .gallery-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 992px) {
+  .group-link,
+  .concert-link,
+  .concert-link-wrapper,
+  .planning-card,
+  .planning-summary-card {
+    flex: 0 0 calc((100% - 16px) / 2);
+    width: calc((100% - 16px) / 2);
+    max-width: calc((100% - 16px) / 2);
+  }
+
+  .budget-layout .card {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+
+  .gallery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .top-nav .nav-links a {
+    margin: 0 8px;
+  }
+
+  .group-link,
+  .concert-link,
+  .concert-link-wrapper,
+  .general-post-card,
+  .planning-card,
+  .planning-summary-card {
+    flex: 0 0 100%;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .group-card,
+  .concert-card {
+    height: auto;
+  }
+
+  .group-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .group-header-img {
+    width: 100%;
+    max-width: 320px;
+    height: 180px;
+  }
+
+  .group-header-info {
+    align-items: center;
+  }
+
+  .group-header-stats {
+    justify-content: center;
+  }
+
+  .timeline-item {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .post-actions {
+    align-self: flex-end;
+  }
+
+  .timeline-time {
+    min-width: auto;
+  }
+
+  .tabs-inner,
+  .concert-tabs-inner {
+    flex-wrap: wrap;
+    border-radius: 20px;
+  }
+
+  .tab,
+  .concert-tab {
+    text-align: center;
+  }
+
+  .members-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .gallery-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .members-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.group-header-info {
+  position: relative;
+  min-height: 180px;
+}
+
+.group-header-stats-bottom {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* RSVP toggle using EXISTING button style */
+.rsvp-toggle-btn {
+  border-radius: 8px; /* same as .btn */
+  font-size: 0.9rem;
+}
+
+/* GOING = light green */
+.rsvp-toggle-btn.going {
+  background: #e6f4ea;
+  border: 1px solid #b7e1c0;
+  color: #2e7d32;
+}
+
+.rsvp-toggle-btn.going:hover {
+  background: #d7eddc;
+}
+
+/* NOT GOING = light red */
+.rsvp-toggle-btn.not-going {
+  background: #fdeaea;
+  border: 1px solid #f5c2c2;
+  color: #b42318;
+}
+
+.rsvp-toggle-btn.not-going:hover {
+  background: #fbdede;
+}
+
+
+.general-filter-form {
+  width: auto;
+  margin: 0;
+}
+
+.general-filter-form select {
+  width: auto;
+  min-width: 150px;
+  margin-bottom: 0;
+  padding: 8px 12px;
+}
+
+.general-posts-wrapper {
+  max-width: 850px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.general-filter-form {
+  width: auto;
+  margin: 0;
+}
+
+.general-filter-form select {
+  width: auto;
+  min-width: 150px;
+  margin-bottom: 0;
+  padding: 8px 12px;
+}
+
+.concert-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 22px 0 24px;
+}
+
+.concert-actions-row .tabs {
+  justify-content: flex-start;
+  margin: 0;
+}
+
+.general-actions-right {
+  justify-content: flex-end;
+  margin: 0;
+}
+
+.general-filter-form {
+  width: auto;
+  margin: 0;
+}
+
+.general-filter-form select {
+  width: auto;
+  min-width: 150px;
+  margin-bottom: 0;
+  padding: 8px 12px;
+}
+
+@media (max-width: 768px) {
+  .concert-actions-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .concert-actions-row .tabs,
+  .general-actions-right {
+    justify-content: center;
+  }
+}
+
+/* Posting buttons (Add Post, Add Housing, etc.) */
+.post-btn,
+.section-topbar .btn {
+    background-color: #333;
+    color: #fff;
+    border: 1px solid #333;
+}
+
+/* hover */
+.post-btn:hover,
+.section-topbar .btn:hover {
+    background-color: #222;
+    border-color: #222;
+}
+
+.stage-filter-dropdown {
+    position: relative;
+}
+
+.stage-filter-menu {
+    position: absolute;
+    top: 44px;
+    left: 0;
+    z-index: 50;
+    background: #fff;
+    border: 1px solid #cbcbcb;
+    border-radius: 12px;
+    padding: 12px;
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.timeline-event {
+    position: absolute;
+}
+
+.timeline-edit-btn {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    color: #666;
+}
+
+.selected-artist-interest {
+    font-weight: 700;
+}
+
+.modal-content .general-post-bottom {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+
+.planning-meta-row {
+  align-items: center;
+}
+
+.planning-meta-row .center {
+  display: flex;
+  justify-content: center;
+  flex: 1;
+}
+
+.planning-meta-row .center form {
+  margin: 0;
+  width: auto;
+}
+
+.modal-small-image {
+    width: 100%;
+    max-width: 700px;   /* bigger */
+    height: auto;
+    border-radius: 12px;
+    display: block;
+    margin: 0 auto 20px auto;
+    object-fit: contain;
+}
+
+.gallery-delete-form button {
+  background: transparent;
+}
+
+.gallery-view-meta-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.gallery-modal-delete-inline {
+  margin: 0;
+}
+
+.report-btn {
+  color: #b7791f !important;
+}
+
+.report-btn:hover {
+  color: #92400e !important;
+  text-decoration: underline;
+}
+
+.report-btn {
+  color: #facc15 !important;   /* yellow */
+}
+
+.report-btn:hover {
+  color: #eab308 !important;
+}
+
