@@ -14,7 +14,7 @@ $group_owner_id = (int)$stmt->fetchColumn();
 
 $is_group_owner = ($group_owner_id === (int)$user_id);
 
-/* ===================== HELPERS ===================== */
+# helper
 function is_ajax_request() {
     return isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
         strtolower((string)$_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
@@ -62,26 +62,31 @@ function upload_image($file_input_name, $subfolder = 'posts') {
 
     return null;
 }
-
-function validate_post_content($content) {
+function validate_post_content($title, $content) {
+    $title = trim($title);
     $content = trim($content);
+
+    if (mb_strlen($title) > 100) {
+        return "Post title must be 100 characters or less.";
+    }
 
     if ($content === '') {
         return "Post text is required.";
     }
 
-    if (mb_strlen($content) > 2000) {
-        return "Posts must be 2000 characters or less.";
+    if (mb_strlen($content) > 500) {
+        return "Post text must be 500 characters or less.";
     }
 
     return "";
 }
 
-/* ===================== HANDLE ACTIONS ===================== */
+# handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     handle_submit_report($pdo, $user_id);
 
+    # only allow going users to interact with posts and rsvp, but allow group owner to manage posts regardless of rsvp status
     try {
         if ($action === 'save_rsvp') {
             $status = $_POST['status'] ?? '';
@@ -136,6 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit();
         }
 
+        # only allow going users to add/edit/delete posts and vote, but allow group owner to manage posts regardless of rsvp status
         if (!$is_going && !$is_group_owner && in_array($action, [
             'add_general_post',
             'edit_general_post',
@@ -154,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($action === 'add_general_post') {
                 $title = trim($_POST['title'] ?? '');
                 $content = trim($_POST['content'] ?? '');
-                $validation_error = validate_post_content($content);
+                $validation_error = validate_post_content($title, $content);
 
                 if ($validation_error !== "") {
                     $error = $validation_error;
@@ -178,11 +184,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
+            # only allow post author to edit
             if ($action === 'edit_general_post') {
                 $post_id = (int)($_POST['post_id'] ?? 0);
                 $title = trim($_POST['title'] ?? '');
                 $content = trim($_POST['content'] ?? '');
-                $validation_error = validate_post_content($content);
+                $validation_error = validate_post_content($title, $content);
 
                 if ($validation_error !== "") {
                     $error = $validation_error;
@@ -204,28 +211,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     exit();
                 }
             }
+        
+        # allow post author or group owner to delete
+        if ($action === 'delete_general_post') {
+            $post_id = (int)($_POST['post_id'] ?? 0);
 
-if ($action === 'delete_general_post') {
-    $post_id = (int)($_POST['post_id'] ?? 0);
+            if ($is_group_owner) {
+                $stmt = $pdo->prepare("
+                    DELETE FROM general_post
+                    WHERE post_id = ? AND group_concert_id = ?
+                ");
+                $stmt->execute([$post_id, $concert_id]);
+            } else {
+                $stmt = $pdo->prepare("
+                    DELETE FROM general_post
+                    WHERE post_id = ? AND user_id = ? AND group_concert_id = ?
+                ");
+                $stmt->execute([$post_id, $user_id, $concert_id]);
+            }
 
-    if ($is_group_owner) {
-        $stmt = $pdo->prepare("
-            DELETE FROM general_post
-            WHERE post_id = ? AND group_concert_id = ?
-        ");
-        $stmt->execute([$post_id, $concert_id]);
-    } else {
-        $stmt = $pdo->prepare("
-            DELETE FROM general_post
-            WHERE post_id = ? AND user_id = ? AND group_concert_id = ?
-        ");
-        $stmt->execute([$post_id, $user_id, $concert_id]);
-    }
-
-    header("Location: general.php?concert_id=" . urlencode($concert_id));
-    exit();
-}
-
+            header("Location: general.php?concert_id=" . urlencode($concert_id));
+            exit();
+        }
+        # only allow going users to vote
             if ($action === 'vote_post') {
                 $post_id = (int)($_POST['post_id'] ?? 0);
                 $vote = (int)($_POST['vote'] ?? 0);
@@ -325,7 +333,7 @@ if ($action === 'delete_general_post') {
     }
 }
 
-/* ===================== REFRESH RSVP AFTER POST ===================== */
+# get current user rsvp
 $stmt = $pdo->prepare("
     SELECT status
     FROM concert_rsvp
@@ -370,7 +378,7 @@ if ($sort === 'liked') {
 }
 
 
-/* ===================== FETCH GENERAL POSTS ===================== */
+# get general posts with vote counts and user vote
 $stmt = $pdo->prepare("
     SELECT
         gp.post_id,
@@ -477,6 +485,7 @@ $general_posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 </div>
                             </div>
 
+<!-- only show actions if user is post author or group owner -->
 <div class="post-actions">
     <?php if ((int)$post['user_id'] === $user_id && $is_going): ?>
         <a
@@ -492,6 +501,7 @@ $general_posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <?php render_report_button('general_post', $post['post_id'], 'Report'); ?>
     <?php endif; ?>
 
+    <!-- only show delete button if user is post author or group owner -->
 <?php if ((int)$post['user_id'] === $user_id || $is_group_owner): ?>
         <form
             method="post"
@@ -512,6 +522,7 @@ $general_posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <?php endif; ?>
 </div>
 
+<!-- report modal -->
 <?php if ((int)$post['user_id'] !== $user_id): ?>
     <?php render_report_modal('general_post', $post['post_id'], 'Report Post'); ?>
 <?php endif; ?>
@@ -565,10 +576,10 @@ $general_posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <input type="hidden" name="post_id" value="<?php echo (int)$post['post_id']; ?>">
 
                                     <label>Title:</label>
-                                    <input type="text" name="title" value="<?php echo h($post['title'] ?? ''); ?>">
+                                    <input type="text" name="title"maxlength="100" value="<?php echo h($post['title'] ?? ''); ?>">
 
                                     <label>Main Text:</label>
-                                    <textarea name="content" maxlength="2000" required><?php echo h($post['content']); ?></textarea>
+                                    <textarea name="content" maxlength="500" required><?php echo h($post['content']); ?></textarea>
 
                                     <button type="submit" class="btn">Save Changes</button>
                                 </form>
@@ -590,10 +601,10 @@ $general_posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <input type="hidden" name="action" value="add_general_post">
 
             <label>Title:</label>
-            <input type="text" name="title">
+            <input type="text" name="title"maxlength="100">
 
             <label>Main Text:</label>
-            <textarea name="content" maxlength="2000" required></textarea>
+            <textarea name="content" maxlength="500" required></textarea>
 
             <label>Attach Image (optional):</label>
             <input type="file" name="image" accept="image/*">
@@ -608,6 +619,7 @@ $general_posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <script>
 const userIsGoing = <?php echo $is_going ? 'true' : 'false'; ?>;
 
+// modal functions
 function openModal(id) {
     const modal = document.getElementById(id);
 
@@ -636,6 +648,7 @@ window.onclick = function(event) {
     });
 };
 
+// voting function
 async function votePost(postId, vote, clickedBtn) {
     if (!userIsGoing) {
         alert('You are not going to this event!');

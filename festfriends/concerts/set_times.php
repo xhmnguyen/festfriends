@@ -1,13 +1,11 @@
-
-
 <?php
 require_once("../included_functions.php");
 require_once("included_concert.php");
 
 $error = "";
 
-/* ===================== HELPERS ===================== */
-function hex_to_rgba($hex, $alpha = 0.18) {
+# helper
+    function hex_to_rgba($hex, $alpha = 0.18) {
     $hex = ltrim((string)$hex, '#');
 
     if (strlen($hex) === 3) {
@@ -46,21 +44,21 @@ function build_concert_date_options($start_date, $end_date) {
 }
 
 $pastel_colors = [
-    '#F8BBD0' => 'Pastel Pink',
-    '#D1C4E9' => 'Pastel Purple',
-    '#BBDEFB' => 'Pastel Blue',
-    '#B2EBF2' => 'Pastel Cyan',
-    '#C8E6C9' => 'Pastel Green',
-    '#DCEDC8' => 'Pastel Lime',
-    '#FFF9C4' => 'Pastel Yellow',
-    '#FFE0B2' => 'Pastel Orange',
-    '#FFCCBC' => 'Pastel Coral',
-    '#D7CCC8' => 'Pastel Brown'
+    '#F8BBD0' => 'Pink',
+    '#D1C4E9' => 'Purple',
+    '#BBDEFB' => 'Blue',
+    '#B2EBF2' => 'Cyan',
+    '#C8E6C9' => 'Green',
+    '#DCEDC8' => 'Lime',
+    '#FFF9C4' => 'Yellow',
+    '#FFE0B2' => 'Orange',
+    '#FFCCBC' => 'Coral',
+    '#D7CCC8' => 'Brown'
 ];
 
 $concert_date_options = build_concert_date_options($concert['start_date'], $concert['end_date'] ?? null);
 
-/* ===================== FETCH GROUP ===================== */
+# get group info
 $stmt = $pdo->prepare("
     SELECT *
     FROM user_group
@@ -75,7 +73,7 @@ if (!$group) {
 
 $is_group_owner = ((int)$group['owner_id'] === (int)$user_id);
 
-/* ===================== HANDLE ACTIONS ===================== */
+# form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
@@ -332,7 +330,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-/* ===================== REFRESH RSVP ===================== */
+# get current user rsvp
 $stmt = $pdo->prepare("
     SELECT status
     FROM concert_rsvp
@@ -342,7 +340,7 @@ $stmt->execute([$concert_id, $user_id]);
 $current_rsvp = $stmt->fetchColumn();
 $is_going = ($current_rsvp === 'going');
 
-/* ===================== RSVP LIST ===================== */
+# get rsvp list
 $stmt = $pdo->prepare("
     SELECT u.username, u.full_name, u.image, cr.status
     FROM concert_rsvp cr
@@ -364,7 +362,7 @@ foreach ($rsvp_users as $rsvp_user) {
     }
 }
 
-/* ===================== FETCH STAGES ===================== */
+# get stages
 $stmt = $pdo->prepare("
     SELECT *
     FROM concert_stage
@@ -374,7 +372,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$concert_id]);
 $stages = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-/* ===================== FETCH PERFORMANCES ===================== */
+# get performances with interest info
 $stmt = $pdo->prepare("
     SELECT
         p.*,
@@ -401,7 +399,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$user_id, $concert_id]);
 $performances = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-/* ===================== FETCH INTEREST USERS ===================== */
+# get interest users
 $interest_users = [];
 
 foreach ($performances as $performance) {
@@ -416,7 +414,7 @@ foreach ($performances as $performance) {
     $interest_users[$performance['performance_id']] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-/* ===================== CURRENT STAGE VIEW ===================== */
+# get current stage filter
 $current_stage = $_GET['stage'] ?? 'all';
 $current_stage = (string)$current_stage;
 
@@ -432,7 +430,7 @@ if (!in_array($current_stage, $valid_stage_keys, true)) {
     $current_stage = 'all';
 }
 
-/* ===================== TIMELINE PREP ===================== */
+# organize performances by date and stage
 $timeline_by_date = [];
 $has_unassigned = false;
 
@@ -500,40 +498,46 @@ $action_buttons = $is_going
 
 <?php render_concert_action_row($concert_id, "set_times", $action_buttons); ?>
 
-<!-- ===================== STAGE BUTTONS ===================== -->
+<!-- toggle stages -->
 <div class="stage-toggle-row">
-
-    <!-- ALL -->
-    <a href="set_times.php?concert_id=<?php echo (int)$concert_id; ?>&stage=all"
-       class="stage-pill <?php echo $current_stage === 'all' ? 'active' : ''; ?>">
-        All Stages
-    </a>
-
-    <!-- STAGES -->
-    <?php foreach ($stages as $stage): ?>
-        <a href="set_times.php?concert_id=<?php echo (int)$concert_id; ?>&stage=<?php echo (int)$stage['stage_id']; ?>"
-           class="stage-pill <?php echo $current_stage === (string)$stage['stage_id'] ? 'active' : ''; ?>">
-            <?php echo h($stage['name']); ?>
+    <div class="stage-toggle-left">
+        <a
+            href="set_times.php?concert_id=<?php echo (int)$concert_id; ?>&stage=all"
+            class="stage-toggle-btn <?php echo $current_stage === 'all' ? 'active' : ''; ?>"
+        >
+            All Stages
         </a>
-    <?php endforeach; ?>
 
-    <!-- UNASSIGNED -->
-    <?php if ($has_unassigned): ?>
-        <a href="set_times.php?concert_id=<?php echo (int)$concert_id; ?>&stage=unassigned"
-           class="stage-pill <?php echo $current_stage === 'unassigned' ? 'active' : ''; ?>">
-            Unassigned
-        </a>
-    <?php endif; ?>
+        <?php foreach ($stages as $stage): ?>
+            <a
+                href="set_times.php?concert_id=<?php echo (int)$concert_id; ?>&stage=<?php echo (int)$stage['stage_id']; ?>"
+                class="stage-toggle-btn <?php echo $current_stage === (string)$stage['stage_id'] ? 'active' : ''; ?>"
+            >
+                <?php echo h($stage['name']); ?>
+            </a>
+        <?php endforeach; ?>
 
-    <!-- EDIT CURRENT STAGE -->
-    <div class="stage-right-actions">
-        <?php if ($is_going): ?>
-            <button class="text-action-btn" onclick="openModal('editStagesModal')">
+        <?php if ($has_unassigned): ?>
+            <a
+                href="set_times.php?concert_id=<?php echo (int)$concert_id; ?>&stage=unassigned"
+                class="stage-toggle-btn <?php echo $current_stage === 'unassigned' ? 'active' : ''; ?>"
+            >
+                Unassigned
+            </a>
+        <?php endif; ?>
+    </div>
+
+    <div class="stage-toggle-right">
+        <?php if ($is_going && $current_stage !== 'all' && $current_stage !== 'unassigned'): ?>
+            <button
+                type="button"
+                class="text-action-btn"
+                onclick="openModal('editStageModal<?php echo (int)$current_stage; ?>')"
+            >
                 Edit Stage
             </button>
         <?php endif; ?>
     </div>
-
 </div>
 
 <div class="timeline-day-card">
@@ -620,7 +624,7 @@ $action_buttons = $is_going
             border-left-color:<?php echo h($column['color']); ?>;
             background:<?php echo hex_to_rgba($column['color']); ?>;">
 
-    <!-- CLICK NAME = OPEN MODAL -->
+    <!-- arist name and modal -->
     <div class="timeline-event-top">
         <button class="artist-link"
                 onclick="openModal('artistModal<?php echo $item['performance_id']; ?>')">
@@ -643,16 +647,29 @@ $action_buttons = $is_going
     </div>
 </div>
 
-<!-- ===================== ARTIST MODAL ===================== -->
+<!-- artist modal -->
 <div id="artistModal<?php echo $item['performance_id']; ?>" class="modal">
-<div class="modal-content">
+<div class="modal-content" style="position: relative;">
 <span class="close-btn" onclick="closeModal('artistModal<?php echo $item['performance_id']; ?>')">&times;</span>
+
+<?php if ($can_edit): ?>
+    <form
+        method="post"
+        style="position:absolute; top:18px; right:52px;"
+        onsubmit="return confirm('Delete artist?');"
+    >
+        <input type="hidden" name="action" value="delete_performance">
+        <input type="hidden" name="performance_id" value="<?php echo $item['performance_id']; ?>">
+        <button type="submit" class="text-action-btn delete-action">Delete</button>
+    </form>
+<?php endif; ?>
 
 <h3><?php echo h($item['artist_name']); ?></h3>
 
-<!-- INTEREST -->
+<!-- interest form -->
 <form method="post">
 <input type="hidden" name="action" value="toggle_artist_interest">
+<input type="hidden" name="performance_date" value="<?php echo date('Y-m-d', $start); ?>">
 <input type="hidden" name="performance_id" value="<?php echo $item['performance_id']; ?>">
 <input type="hidden" name="stage_redirect" value="<?php echo h($current_stage); ?>">
 
@@ -661,13 +678,57 @@ $action_buttons = $is_going
 </button>
 </form>
 
+<!-- interested users -->
+<div class="artist-interest-box">
+    <h4>
+        Interested: <?php echo (int)$item['interested_count']; ?>
+    </h4>
+
+    <?php if (!empty($interest_users[$item['performance_id']])): ?>
+        <?php foreach ($interest_users[$item['performance_id']] as $person): ?>
+            <div
+                class="members-card-top"
+                style="padding: 12px 0; border-bottom: 1px solid #ececec;"
+            >
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <?php if (!empty($person['image'])): ?>
+                        <img
+                            src="../<?php echo h($person['image']); ?>"
+                            alt="Profile"
+                            class="member-avatar-img"
+                        >
+                    <?php else: ?>
+                        <div class="member-avatar-fallback">
+                            <?php echo h(strtoupper(substr($person['full_name'] ?? $person['username'], 0, 1))); ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <div>
+                        <div class="member-name" style="font-size: 0.95rem;">
+                            <?php echo h($person['full_name'] ?: $person['username']); ?>
+                        </div>
+
+                        <div class="group-owner">
+                            @<?php echo h($person['username']); ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <p class="muted-text">No one is interested yet.</p>
+    <?php endif; ?>
+</div>
+
 <?php if ($can_edit): ?>
 
-<hr>
+<hr style="margin: 28px 0 22px;">
+<h4 style="margin-bottom: 14px;">Edit Artist Information</h4>
 
-<!-- EDIT -->
+<!-- edit form -->
 <form method="post">
 <input type="hidden" name="action" value="update_performance">
+<input type="hidden" name="performance_date" value="<?php echo date('Y-m-d', $start); ?>">
 <input type="hidden" name="performance_id" value="<?php echo $item['performance_id']; ?>">
 
 <input type="text" name="artist_name" value="<?php echo h($item['artist_name']); ?>" required>
@@ -688,12 +749,13 @@ $action_buttons = $is_going
 <button class="btn">Save</button>
 </form>
 
-<!-- DELETE -->
+<!-- delete form -->
 <form method="post" onsubmit="return confirm('Delete artist?');">
 <input type="hidden" name="action" value="delete_performance">
+<input type="hidden" name="performance_date" value="<?php echo date('Y-m-d', $start); ?>">
 <input type="hidden" name="performance_id" value="<?php echo $item['performance_id']; ?>">
 
-<button class="remove-member-btn">Delete</button>
+
 </form>
 
 <?php endif; ?>
@@ -715,6 +777,117 @@ $action_buttons = $is_going
 
 </div>
 
+
+
+<!-- add stage -->
+<div id="stageModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('stageModal')">&times;</span>
+        <h3>Add Stage</h3>
+
+        <form method="post">
+            <input type="hidden" name="action" value="add_stage">
+
+            <label>Stage Name:</label>
+            <input type="text" name="stage_name" required>
+
+            <label>Stage Color:</label>
+            <select name="stage_color">
+                <?php foreach ($pastel_colors as $hex => $label): ?>
+                    <option value="<?php echo h($hex); ?>">
+                        <?php echo h($label); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+
+            <button type="submit" class="btn primary-action-btn">Save Stage</button>
+        </form>
+    </div>
+</div>
+
+<!-- add artist  -->
+<div id="performanceModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('performanceModal')">&times;</span>
+        <h3>Add Artist</h3>
+
+        <form method="post">
+            <input type="hidden" name="action" value="add_performance">
+
+            <label>Artist Name:</label>
+            <input type="text" name="artist_name" required>
+
+            <label>Stage:</label>
+            <select name="stage_id">
+                <option value="">No stage</option>
+                <?php foreach ($stages as $stage): ?>
+                    <option value="<?php echo (int)$stage['stage_id']; ?>">
+                        <?php echo h($stage['name']); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+
+            <label>Date:</label>
+            <select name="performance_date" required>
+                <?php foreach ($concert_date_options as $date_value => $date_label): ?>
+                    <option value="<?php echo h($date_value); ?>">
+                        <?php echo h($date_label); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+
+            <label>Start Time:</label>
+            <input type="time" name="start_clock" required>
+
+            <label>End Time:</label>
+            <input type="time" name="end_clock" required>
+
+            <button type="submit" class="btn primary-action-btn">Save Artist</button>
+        </form>
+    </div>
+</div>
+<?php foreach ($stages as $stage): ?>
+    <div id="editStageModal<?php echo (int)$stage['stage_id']; ?>" class="modal">
+<div class="modal-content" style="position: relative;">
+    <span class="close-btn" onclick="closeModal('editStageModal<?php echo (int)$stage['stage_id']; ?>')">&times;</span>
+
+    <?php if ($is_group_owner): ?>
+        <form
+            method="post"
+            style="position:absolute; top:18px; right:52px;"
+            onsubmit="return confirm('Delete this stage? Artists assigned to it will become unassigned.');"
+        >
+            <input type="hidden" name="action" value="delete_stage">
+            <input type="hidden" name="stage_id" value="<?php echo (int)$stage['stage_id']; ?>">
+            <button type="submit" class="text-action-btn delete-action">Delete</button>
+        </form>
+    <?php endif; ?>
+
+    <h3>Edit Stage</h3>
+
+            <form method="post">
+                <input type="hidden" name="action" value="update_stage">
+                <input type="hidden" name="stage_id" value="<?php echo (int)$stage['stage_id']; ?>">
+
+                <label>Stage Name:</label>
+                <input type="text" name="stage_name" value="<?php echo h($stage['name']); ?>" required>
+
+                <label>Stage Color:</label>
+                <select name="stage_color">
+                    <?php foreach ($pastel_colors as $hex => $label): ?>
+                        <option value="<?php echo h($hex); ?>" <?php echo strtoupper($stage['color']) === strtoupper($hex) ? 'selected' : ''; ?>>
+                            <?php echo h($label); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+
+                <button type="submit" class="btn primary-action-btn">Save Stage</button>
+            </form>
+
+
+        </div>
+    </div>
+<?php endforeach; ?>
 <?php render_rsvp_modal($going_users, $not_going_users); ?>
 
 <script>
@@ -726,6 +899,8 @@ if(e.target===m)m.style.display="none";
 });
 };
 </script>
+
+
 
 <?php display_footer(); ?>
 </body>

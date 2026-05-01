@@ -8,18 +8,19 @@ $name = "";
 $description = "";
 $image = null;
 
-// Ensure logged-in user exists
 $stmt = $pdo->prepare("SELECT * FROM user WHERE user_id = ?");
 $stmt->execute([$_SESSION['user_id']]);
+
+# if user doesn't exist, force logout
 if ($stmt->rowCount() === 0) {
     die("Invalid user. Please log in again.");
 }
 
+# get user data for display
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name']);
     $description = trim($_POST['description']);
 
-    // Handle image upload
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
         $uploadDir = "../uploads/";
 
@@ -65,8 +66,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
-?>
 
+?>
+<!-- create_group.php -->
     <!DOCTYPE html>
     <html lang='en'>
     <head>
@@ -76,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </head>
     <body>
 
-<div class="container flex" style="justify-content:center; margin-top:60px;">
+    <div class="container flex" style="justify-content:center; margin-top:60px;">
     <div class="card" style="max-width:500px; width:100%;">
 
         <h1 class="text-center">Create a New Group</h1>
@@ -92,13 +94,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <label>Group Name:</label>
             <input 
                 type="text" 
-                name="name" 
+                name="name"
+                maxlength="50" 
                 value="<?php echo htmlspecialchars($name); ?>" 
                 required
             >
 
             <label>Description:</label>
-            <textarea name="description"><?php echo htmlspecialchars($description); ?></textarea>
+            <textarea name="description" maxlength="100"><?php echo htmlspecialchars($description); ?></textarea>
 
             <label class="mt-20">Image (optional):</label>
             <input type="file" name="image" accept="image/*">

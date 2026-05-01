@@ -20,16 +20,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
 
-    if (empty($full_name) || empty($username) || empty($email) || empty($password) || empty($confirm_password)) {
-        $error = "All fields are required.";
-    } 
-    elseif ($password !== $confirm_password) {
-        $error = "Passwords do not match.";
-    }
+if (empty($full_name) || empty($username) || empty($email) || empty($password) || empty($confirm_password)) {
+    $error = "All fields are required.";
+} elseif (strlen($full_name) > 50) {
+    $error = "Full name must be 50 characters or fewer.";
+} elseif (strlen($username) < 5 || strlen($username) > 12) {
+    $error = "Username must be 5 to 12 characters long.";
+} elseif (!preg_match('/^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/', $password)) {    $error = "Password must be at least 8 characters long and include an uppercase letter, symbol, and number.";
+} elseif ($password !== $confirm_password) {
+    $error = "Passwords do not match.";
+}
     else {
         try {
 
-            // Check if email already exists
+            # check if username already exists
             $stmt = $pdo->prepare("SELECT user_id FROM user WHERE email = ?");
             $stmt->execute([$email]);
 
@@ -39,14 +43,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-                /* ===================== HANDLE IMAGE UPLOAD ===================== */
+                # image upload handling
                 $image_path = null;
 
                 if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === 0) {
 
                     $upload_dir = "uploads/profile_pics/";
 
-                    // create folder if not exists
+                    # create directory if it doesn't exist
                     if (!is_dir($upload_dir)) {
                         mkdir($upload_dir, 0777, true);
                     }
@@ -63,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
-                /* ===================== INSERT USER ===================== */
+                # insert user
                 $stmt = $pdo->prepare("
                     INSERT INTO user (full_name, username, email, password, image) 
                     VALUES (?, ?, ?, ?, ?)
@@ -117,20 +121,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <form method="post" enctype="multipart/form-data">
 
             <label>Full Name:</label>
-            <input 
-                type="text" 
-                name="full_name" 
-                value="<?php echo htmlspecialchars($full_name); ?>" 
-                required
-            >
+<input 
+    type="text" 
+    name="full_name" 
+    value="<?php echo htmlspecialchars($full_name); ?>" 
+    maxlength="50"
+    required
+>
 
             <label>Username:</label>
-            <input 
-                type="text" 
-                name="username" 
-                value="<?php echo htmlspecialchars($username); ?>" 
-                required
-            >
+<input 
+    type="text" 
+    name="username" 
+    value="<?php echo htmlspecialchars($username); ?>" 
+    minlength="5"
+    maxlength="12"
+    required
+>
 
             <label>Email:</label>
             <input 
@@ -141,12 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             >
 
             <label>Password:</label>
-            <input 
-                type="password" 
-                name="password" 
-                required
-            >
-
+<input type="password" name="password" minlength="8" required>
             <label>Confirm Password:</label>
             <input 
                 type="password" 

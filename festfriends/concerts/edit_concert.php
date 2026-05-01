@@ -4,13 +4,14 @@ require_once("../database.php");
 require_once("../included_functions.php");
 
 if (!isset($_GET['concert_id'])) {
-    die("Concert ID not provided.");
+    die("Festival ID not provided.");
 }
 
 if (!isset($_SESSION['user_id'])) {
     die("You must be logged in.");
 }
 
+# get concert details
 $concert_id = (int)$_GET['concert_id'];
 $user_id = (int)$_SESSION['user_id'];
 
@@ -44,6 +45,7 @@ $end_date = $concert['end_date'] ?? '';
 $all_day = $concert['all_day'] ?? 1;
 $image_path = $concert['image'] ?? null;
 
+# helper functions
 function h($value) {
     return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 }
@@ -61,6 +63,18 @@ function image_src($path) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    if (isset($_POST['delete_concert'])) {
+        $stmt = $pdo->prepare("
+            DELETE FROM group_concert
+            WHERE group_concert_id = ? AND group_id = ?
+        ");
+        $stmt->execute([$concert_id, $group_id]);
+
+        header("Location: ../groups/group.php?group_id=" . urlencode($group_id));
+        exit();
+    }
+
     $name = trim($_POST['name'] ?? '');
     $location = trim($_POST['location'] ?? '');
     $start_date = $_POST['start_date'] ?? '';
@@ -71,11 +85,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($end_date === '') {
         $end_date = $start_date;
     }
-
     if ($name === '' || $start_date === '') {
-        $error = "Concert name and start date are required.";
+        $error = "Festival name and start date are required.";
+    } elseif (strlen($name) > 100) {
+        $error = "Festival name must be 100 characters or fewer.";
+    } elseif (strlen($location) > 100) {
+        $error = "Location must be 100 characters or fewer.";
     }
-
     if ($existing_image !== '') {
         $image_path = $existing_image;
     }
@@ -130,6 +146,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 }
+
+# display edit form
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -167,11 +185,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input type="hidden" name="existing_image" id="existing_image">
 
             <label>Festival Name:</label>
-            <input type="text" name="name" id="name" value="<?php echo h($name); ?>" required>
-
+            <input type="text" name="name" id="name" value="<?php echo h($name); ?>" maxlength="100" required>
             <label>Location:</label>
-            <input type="text" name="location" id="location" value="<?php echo h($location); ?>">
-
+            <input type="text" name="location" id="location" value="<?php echo h($location); ?>" maxlength="100">
             <label>Start Date:</label>
             <input type="date" name="start_date" id="start_date" value="<?php echo h($start_date); ?>" required>
 
@@ -216,23 +232,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <hr class="mt-20">
 
-        <div class="text-center mt-20">
-            <form method="post" onsubmit="return confirm('Are you sure you want to delete this group?');">
-                <button type="submit" name="delete_group" class="btn delete-btn">
+        <div style="display:flex; justify-content:center; margin-top:20px;">
+            <form method="post" onsubmit="return confirm('Are you sure you want to delete this festival?');">
+                <button type="submit" name="delete_concert" value="1" class="btn delete-btn">
                     Delete Festival
                 </button>
             </form>
         </div>
 
-        <p class="text-center mt-20">
-            <a href="concert.php?concert_id=<?php echo (int)$concert_id; ?>">Back to Festival Dashboard</a>
-        </p>
-    </div>
-</div>
-
 <script>
-let searchConcertData = [];
 
+// search for concerts
+let searchConcertData = [];
 async function searchConcerts() {
     const keyword = document.getElementById('concertSearchInput').value.trim();
     const resultsBox = document.getElementById('searchResults');
@@ -265,7 +276,7 @@ async function searchConcerts() {
         }
 
         if (!Array.isArray(data) || data.length === 0) {
-            resultsBox.innerHTML = '<p>No concerts found.</p>';
+            resultsBox.innerHTML = '<p>No festivals found.</p>';
             return;
         }
 
@@ -292,6 +303,7 @@ async function searchConcerts() {
     }
 }
 
+// select concert from search results
 function selectConcert(index) {
     const concert = searchConcertData[index];
 
@@ -332,6 +344,7 @@ function selectConcert(index) {
     document.getElementById('searchResults').classList.add('hidden');
 }
 
+// helper functions
 function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, function(match) {
         const map = {
@@ -346,6 +359,7 @@ function escapeHtml(str) {
     });
 }
 
+// format date range for display
 function formatDateRange(startDate, endDate) {
     if (!startDate) {
         return '';

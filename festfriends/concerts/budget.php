@@ -5,7 +5,7 @@ require_once("../report_functions.php");
 
 $error = "";
 
-/* ===================== HANDLE ACTIONS ===================== */
+# handler
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
@@ -99,7 +99,7 @@ if ($action === 'save_budget') {
     }
 }
 
-/* ===================== REFRESH RSVP ===================== */
+# get current rsvp
 $stmt = $pdo->prepare("
     SELECT status
     FROM concert_rsvp
@@ -130,7 +130,7 @@ foreach ($rsvp_users as $r) {
     }
 }
 
-/* ===================== FETCH CURRENT USER BUDGET ===================== */
+# get current user's budget
 $stmt = $pdo->prepare("
     SELECT *
     FROM user_budget
@@ -139,7 +139,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$user_id, $concert_id]);
 $current_budget = $stmt->fetch(PDO::FETCH_ASSOC);
 
-/* ===================== FETCH GROUP BUDGET AVERAGES ===================== */
+# get budget averages for the concert
 $stmt = $pdo->prepare("
     SELECT
         AVG(housing_budget) AS avg_housing_budget,

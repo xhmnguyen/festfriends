@@ -13,11 +13,25 @@ if ($role !== 'admin') {
 $message = "";
 $error = "";
 
-function get_report_owner_id($pdo, $target_type, $target_id) {
-    if ($target_type === 'user') {
-        return $target_id;
+if (!function_exists('h')) {
+    function h($value) {
+        return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+    }
+}
+
+function admin_image_src($path) {
+    if (empty($path)) {
+        return "";
     }
 
+    if (filter_var($path, FILTER_VALIDATE_URL)) {
+        return $path;
+    }
+
+    return ltrim((string)$path, "/");
+}
+
+function get_report_owner_id($pdo, $target_type, $target_id) {
     if ($target_type === 'group') {
         $stmt = $pdo->prepare("SELECT owner_id FROM user_group WHERE group_id = ?");
         $stmt->execute([$target_id]);
@@ -62,6 +76,117 @@ function get_report_owner_id($pdo, $target_type, $target_id) {
     return 0;
 }
 
+function get_reported_content($pdo, $target_type, $target_id) {
+    if ($target_type === 'group') {
+        $stmt = $pdo->prepare("
+            SELECT 
+                ug.name,
+                ug.description,
+                ug.image,
+                u.username AS owner_username,
+                ug.created_at
+            FROM user_group ug
+            JOIN user u ON ug.owner_id = u.user_id
+            WHERE ug.group_id = ?
+        ");
+        $stmt->execute([$target_id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    if ($target_type === 'concert') {
+        $stmt = $pdo->prepare("
+            SELECT 
+                gc.name,
+                gc.location,
+                gc.start_date,
+                gc.end_date,
+                gc.image,
+                ug.name AS group_name,
+                ug.owner_id,
+                u.username AS owner_username,
+                gc.created_at
+            FROM group_concert gc
+            JOIN user_group ug ON gc.group_id = ug.group_id
+            JOIN user u ON ug.owner_id = u.user_id
+            WHERE gc.group_concert_id = ?
+        ");
+        $stmt->execute([$target_id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    if ($target_type === 'general_post') {
+        $stmt = $pdo->prepare("
+            SELECT 
+                gp.title,
+                gp.content,
+                gp.image,
+                u.username AS posted_by,
+                gp.created_at
+            FROM general_post gp
+            JOIN user u ON gp.user_id = u.user_id
+            WHERE gp.post_id = ?
+        ");
+        $stmt->execute([$target_id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    if ($target_type === 'housing') {
+        $stmt = $pdo->prepare("
+            SELECT 
+                ho.title,
+                ho.arrival_date,
+                ho.departure_date,
+                ho.total_cost,
+                ho.link,
+                ho.notes,
+                ho.image,
+                u.username AS posted_by,
+                ho.created_at
+            FROM housing_option ho
+            JOIN user u ON ho.user_id = u.user_id
+            WHERE ho.housing_id = ?
+        ");
+        $stmt->execute([$target_id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    if ($target_type === 'transport') {
+        $stmt = $pdo->prepare("
+            SELECT 
+                t.title,
+                t.arrival_date,
+                t.departure_date,
+                t.total_cost,
+                t.link,
+                t.notes,
+                u.username AS posted_by,
+                t.created_at
+            FROM transport_option t
+            JOIN user u ON t.user_id = u.user_id
+            WHERE t.transport_id = ?
+        ");
+        $stmt->execute([$target_id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    if ($target_type === 'gallery') {
+        $stmt = $pdo->prepare("
+            SELECT 
+                gi.image,
+                gi.caption,
+                u.username AS posted_by,
+                gi.created_at
+            FROM gallery_image gi
+            JOIN user u ON gi.user_id = u.user_id
+            WHERE gi.image_id = ?
+        ");
+        $stmt->execute([$target_id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    return null;
+}
+
 function delete_reported_content($pdo, $target_type, $target_id) {
     if ($target_type === 'group') {
         $stmt = $pdo->prepare("DELETE FROM user_group WHERE group_id = ?");
@@ -98,19 +223,47 @@ function delete_reported_content($pdo, $target_type, $target_id) {
         $stmt->execute([$target_id]);
         return;
     }
+}
 
-    if ($target_type === 'user') {
-        $stmt = $pdo->prepare("DELETE FROM user WHERE user_id = ?");
-        $stmt->execute([$target_id]);
+function render_reported_content($content) {
+    if (!$content) {
+        echo '<p><em>This content may have already been deleted.</em></p>';
         return;
+    }
+
+    foreach ($content as $key => $value) {
+        if ($value === null || $value === '') {
+            continue;
+        }
+
+        $label = ucwords(str_replace("_", " ", $key));
+
+        if ($key === 'posted_by' || $key === 'owner_username') {
+    echo '<p>';
+    echo '<strong>Posted by:</strong><br>';
+    echo '@' . h($value);
+    echo '</p>';
+    continue;
+}
+        if ($key === 'image') {
+            $src = admin_image_src($value);
+
+            echo '<p><strong>Image:</strong></p>';
+            echo '<img src="' . h($src) . '" alt="Reported Image" style="max-width:100%; max-height:260px; border-radius:10px; margin-bottom:12px;">';
+            continue;
+        }
+
+        echo '<p>';
+        echo '<strong>' . h($label) . ':</strong><br>';
+        echo nl2br(h($value));
+        echo '</p>';
     }
 }
 
+# admin actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $report_id = (int)($_POST['report_id'] ?? 0);
-    $target_type = $_POST['target_type'] ?? '';
-    $target_id = (int)($_POST['target_id'] ?? 0);
 
     try {
         $stmt = $pdo->prepare("SELECT * FROM report WHERE report_id = ?");
@@ -119,20 +272,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!$report) {
             $error = "Report not found.";
-        } elseif ((int)$report['reporter_id'] === $user_id && in_array($action, ['resolve_report', 'delete_content', 'delete_owner'], true)) {
+        } elseif ((int)$report['reporter_id'] === $user_id) {
             $error = "You cannot resolve or act on your own report.";
         } else {
+            $target_type = $report['target_type'];
+            $target_id = (int)$report['target_id'];
+
             if ($action === 'resolve_report') {
-                $stmt = $pdo->prepare("UPDATE report SET status = 'resolved' WHERE report_id = ?");
-                $stmt->execute([$report_id]);
+                $stmt = $pdo->prepare("
+                    UPDATE report
+                    SET status = 'resolved',
+                        resolved_by = ?,
+                        resolved_at = CURRENT_TIMESTAMP,
+                        action_taken = 'Marked resolved'
+                    WHERE report_id = ?
+                ");
+                $stmt->execute([$user_id, $report_id]);
+
                 $message = "Report marked as resolved.";
             }
 
             if ($action === 'delete_content') {
                 delete_reported_content($pdo, $target_type, $target_id);
 
-                $stmt = $pdo->prepare("UPDATE report SET status = 'resolved' WHERE report_id = ?");
-                $stmt->execute([$report_id]);
+                $stmt = $pdo->prepare("
+                    UPDATE report
+                    SET status = 'resolved',
+                        resolved_by = ?,
+                        resolved_at = CURRENT_TIMESTAMP,
+                        action_taken = 'Deleted reported content'
+                    WHERE report_id = ?
+                ");
+                $stmt->execute([$user_id, $report_id]);
 
                 $message = "Reported content deleted.";
             }
@@ -148,8 +319,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt = $pdo->prepare("DELETE FROM user WHERE user_id = ?");
                     $stmt->execute([$owner_id]);
 
-                    $stmt = $pdo->prepare("UPDATE report SET status = 'resolved' WHERE report_id = ?");
-                    $stmt->execute([$report_id]);
+                    $stmt = $pdo->prepare("
+                        UPDATE report
+                        SET status = 'resolved',
+                            resolved_by = ?,
+                            resolved_at = CURRENT_TIMESTAMP,
+                            action_taken = 'Deleted owner account'
+                        WHERE report_id = ?
+                    ");
+                    $stmt->execute([$user_id, $report_id]);
 
                     $message = "Owner account deleted.";
                 }
@@ -160,6 +338,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+# get reports
 $stmt = $pdo->prepare("
     SELECT 
         r.*,
@@ -229,27 +408,37 @@ $resolved_reports = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </table>
 
         <?php foreach ($unresolved_reports as $report): ?>
+            <?php $reported_content = get_reported_content($pdo, $report['target_type'], (int)$report['target_id']); ?>
+
             <div id="reportModal<?php echo (int)$report['report_id']; ?>" class="modal">
-                <div class="modal-content">
+                <div class="modal-content admin-report-modal">
                     <span class="close-btn" onclick="closeModal('reportModal<?php echo (int)$report['report_id']; ?>')">&times;</span>
 
                     <h3>Report Details</h3>
 
                     <p><strong>Status:</strong> <?php echo h($report['status']); ?></p>
                     <p><strong>Type:</strong> <?php echo h($report['target_type']); ?></p>
-                    <p><strong>Target ID:</strong> <?php echo (int)$report['target_id']; ?></p>
                     <p><strong>Reported By:</strong> @<?php echo h($report['reporter_username']); ?></p>
                     <p><strong>Date:</strong> <?php echo h(date("M j, Y g:i A", strtotime($report['created_at']))); ?></p>
-                    <p><strong>Reason:</strong><br><?php echo nl2br(h($report['reason'])); ?></p>
+
+                    <hr>
+
+                    <h4>Reporter Reason</h4>
+                    <p><?php echo nl2br(h($report['reason'])); ?></p>
+
+                    <hr>
+
+                    <h4>Reported Content</h4>
+                    <?php render_reported_content($reported_content); ?>
+
+                    <hr>
 
                     <?php if ((int)$report['reporter_id'] === $user_id): ?>
                         <p class="error-message">You cannot resolve or act on your own report.</p>
                     <?php else: ?>
                         <div class="post-actions" style="display:flex; gap:10px; flex-wrap:wrap;">
-                            <form method="post">
+                            <form method="post" onsubmit="return confirm('Delete the reported content?');">
                                 <input type="hidden" name="report_id" value="<?php echo (int)$report['report_id']; ?>">
-                                <input type="hidden" name="target_type" value="<?php echo h($report['target_type']); ?>">
-                                <input type="hidden" name="target_id" value="<?php echo (int)$report['target_id']; ?>">
                                 <button type="submit" name="action" value="delete_content" class="btn delete-btn">
                                     Delete Content
                                 </button>
@@ -257,8 +446,6 @@ $resolved_reports = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                             <form method="post" onsubmit="return confirm('Delete the owner account? This may delete all content they created.');">
                                 <input type="hidden" name="report_id" value="<?php echo (int)$report['report_id']; ?>">
-                                <input type="hidden" name="target_type" value="<?php echo h($report['target_type']); ?>">
-                                <input type="hidden" name="target_id" value="<?php echo (int)$report['target_id']; ?>">
                                 <button type="submit" name="action" value="delete_owner" class="btn delete-btn">
                                     Delete Account
                                 </button>
@@ -289,6 +476,7 @@ $resolved_reports = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <th>Type</th>
                     <th>Reported By</th>
                     <th>Reason</th>
+                    <th>Action Taken</th>
                     <th>Date</th>
                 </tr>
             </thead>
@@ -299,7 +487,8 @@ $resolved_reports = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <td><?php echo h($report['status']); ?></td>
                         <td><?php echo h($report['target_type']); ?></td>
                         <td>@<?php echo h($report['reporter_username']); ?></td>
-                        <td><?php echo h(mb_strimwidth($report['reason'], 0, 70, "...")); ?></td>
+                        <td><?php echo h(mb_strimwidth($report['reason'], 0, 55, "...")); ?></td>
+                        <td><?php echo h($report['action_taken'] ?? 'Resolved'); ?></td>
                         <td><?php echo h(date("M j, Y", strtotime($report['created_at']))); ?></td>
                     </tr>
                 <?php endforeach; ?>
@@ -307,17 +496,28 @@ $resolved_reports = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </table>
 
         <?php foreach ($resolved_reports as $report): ?>
+            <?php $reported_content = get_reported_content($pdo, $report['target_type'], (int)$report['target_id']); ?>
+
             <div id="historyModal<?php echo (int)$report['report_id']; ?>" class="modal">
-                <div class="modal-content">
+                <div class="modal-content admin-report-modal">
                     <span class="close-btn" onclick="closeModal('historyModal<?php echo (int)$report['report_id']; ?>')">&times;</span>
 
                     <h3>Resolved Report</h3>
 
                     <p><strong>Type:</strong> <?php echo h($report['target_type']); ?></p>
-                    <p><strong>Target ID:</strong> <?php echo (int)$report['target_id']; ?></p>
                     <p><strong>Reported By:</strong> @<?php echo h($report['reporter_username']); ?></p>
                     <p><strong>Date:</strong> <?php echo h(date("M j, Y g:i A", strtotime($report['created_at']))); ?></p>
-                    <p><strong>Reason:</strong><br><?php echo nl2br(h($report['reason'])); ?></p>
+                    <p><strong>Action Taken:</strong> <?php echo h($report['action_taken'] ?? 'Resolved'); ?></p>
+
+                    <hr>
+
+                    <h4>Reporter Reason</h4>
+                    <p><?php echo nl2br(h($report['reason'])); ?></p>
+
+                    <hr>
+
+                    <h4>Reported Content</h4>
+                    <?php render_reported_content($reported_content); ?>
                 </div>
             </div>
         <?php endforeach; ?>
@@ -351,6 +551,12 @@ $resolved_reports = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 .admin-report-table tbody tr:hover {
     background: #f9fafb;
+}
+
+.admin-report-modal {
+    max-width: 650px;
+    max-height: 85vh;
+    overflow-y: auto;
 }
 </style>
 

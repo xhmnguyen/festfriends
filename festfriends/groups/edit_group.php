@@ -10,18 +10,17 @@ if (!isset($_GET['group_id'])) {
 $group_id = intval($_GET['group_id']);
 $user_id = $_SESSION['user_id'];
 
-// Fetch group info
 $stmt = $pdo->prepare("SELECT * FROM user_group WHERE group_id = ?");
 $stmt->execute([$group_id]);
 $group = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$group) die("Group not found.");
 
-// Only owner can edit
+# only group owner can edit group
 if ($group['owner_id'] != $user_id) {
     die("You do not have permission to edit this group.");
 }
 
-// Fetch approved members
+# get group members for ownership transfer
 $stmt = $pdo->prepare("
     SELECT u.user_id, u.username 
     FROM user u 
@@ -34,14 +33,18 @@ $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $edit_error = "";
 $message = "";
 
-// Handle edit form submission
+# form submission for editing group details
 if (isset($_POST['edit_group'])) {
-    $name = trim($_POST['name']);
-    $description = trim($_POST['description']);
+    $name = trim($_POST['name'] ?? '');
+    $description = trim($_POST['description'] ?? '');
     $image_path = $group['image'];
 
-    if (!$name) {
+    if ($name === '') {
         $edit_error = "Group name is required.";
+    } elseif (strlen($name) > 100) {
+        $edit_error = "Group name cannot be more than 100 characters.";
+    } elseif (strlen($description) > 1000) {
+        $edit_error = "Group description cannot be more than 1000 characters.";
     }
 
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
@@ -75,7 +78,7 @@ if (isset($_POST['edit_group'])) {
     }
 }
 
-// Handle ownership transfer
+# transfer ownership form submission
 if (isset($_POST['transfer_owner'])) {
     $new_owner_id = intval($_POST['new_owner'] ?? 0);
 
@@ -90,7 +93,7 @@ if (isset($_POST['transfer_owner'])) {
     }
 }
 
-// Handle group deletion
+# delete group form submission
 if (isset($_POST['delete_group'])) {
     $stmt = $pdo->prepare("DELETE FROM user_group WHERE group_id = ?");
     $stmt->execute([$group_id]);
@@ -100,6 +103,7 @@ if (isset($_POST['delete_group'])) {
 }
 ?>
 
+<!-- html and form for editing group details, transferring ownership, and deleting group -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -142,10 +146,10 @@ if (isset($_POST['delete_group'])) {
 
         <form method="post" enctype="multipart/form-data">
             <label>Group Name:</label>
-            <input type="text" name="name" value="<?php echo htmlspecialchars($group['name']); ?>" required>
+            <input type="text" name="name" maxlength="50" value="<?php echo htmlspecialchars($group['name']); ?>" required>
 
             <label>Description:</label>
-            <textarea name="description"><?php echo htmlspecialchars($group['description']); ?></textarea>
+            <textarea name="description"  maxlength="100"><?php echo htmlspecialchars($group['description']); ?></textarea>
 
             <label>Group Image:</label>
             <input type="file" name="image" accept="image/*">

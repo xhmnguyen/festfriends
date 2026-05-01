@@ -5,7 +5,7 @@ require_once("../report_functions.php");
 
 $error = "";
 
-/* ===================== HELPERS ===================== */
+# helper
 function format_option_datetime($date, $time = null, $include_time = 0) {
     if (empty($date)) {
         return "";
@@ -46,7 +46,23 @@ function cost_per_person($total_cost, $max_people, $limited_spots, $joined_count
     return (float)$total_cost / $divisor;
 }
 
-/* ===================== FETCH GROUP ===================== */
+function validate_transport_text($title, $notes, $link) {
+    if (mb_strlen($title) > 50) {
+        return "Title must be 50 characters or less.";
+    }
+
+    if (mb_strlen($notes) > 500) {
+        return "Notes must be 500 characters or less.";
+    }
+
+    if (mb_strlen($link) > 500) {
+        return "Link must be 500 characters or less.";
+    }
+
+    return "";
+}
+
+# get group concert
 $stmt = $pdo->prepare("
     SELECT *
     FROM user_group
@@ -61,7 +77,7 @@ if (!$group) {
 
 $is_group_owner = ((int)$group['owner_id'] === $user_id);
 
-/* ===================== HANDLE ACTIONS ===================== */
+# handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     handle_submit_report($pdo, $user_id);
@@ -98,6 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit();
         }
 
+        # transportation actions require user to be going
         if (!$is_going && in_array($action, [
             'add_transport',
             'edit_transport',
@@ -119,9 +136,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $link = trim($_POST['link'] ?? '');
                 $notes = trim($_POST['notes'] ?? '');
 
-                if ($title === '' || $arrival_date === '' || $departure_date === '') {
-                    $error = "Transportation title, arrival, and departure are required.";
-                } else {
+                $validation_error = validate_transport_text($title, $notes, $link);
+
+            if ($validation_error !== "") {
+                $error = $validation_error;
+            } elseif ($title === '' || $arrival_date === '' || $departure_date === '') {
+                $error = "Transportation title, arrival, and departure are required.";
+            } else {
                     $stmt = $pdo->prepare("
                         INSERT INTO transport_option
                         (group_concert_id, user_id, title, arrival_date, departure_date, include_time, arrival_time, departure_time, total_cost, limited_spots, max_people, link, notes)
@@ -148,6 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
+            # edit transportation
             if ($action === 'edit_transport') {
                 $transport_id = (int)($_POST['transport_id'] ?? 0);
                 $title = trim($_POST['title'] ?? '');
@@ -175,7 +197,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     exit();
                 }
 
-                if ($title === '' || $arrival_date === '' || $departure_date === '') {
+                $validation_error = validate_transport_text($title, $notes, $link);
+
+                if ($validation_error !== "") {
+                    $error = $validation_error;
+                } elseif ($title === '' || $arrival_date === '' || $departure_date === '') {
                     $error = "Transportation title, arrival, and departure are required.";
                 } else {
                     $stmt = $pdo->prepare("
@@ -215,6 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
+            # delete transportation
             if ($action === 'delete_transport') {
                 $transport_id = (int)($_POST['transport_id'] ?? 0);
 
@@ -236,6 +263,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit();
             }
 
+            # toggle join/leave transportation
             if ($action === 'toggle_join_transport') {
                 $transport_id = (int)($_POST['transport_id'] ?? 0);
 
@@ -295,7 +323,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-/* ===================== REFRESH RSVP ===================== */
+# get current users rsvp status
 $stmt = $pdo->prepare("
     SELECT status
     FROM concert_rsvp
@@ -326,7 +354,7 @@ foreach ($rsvp_users as $r) {
     }
 }
 
-/* ===================== FETCH TRANSPORT ===================== */
+# get transportation options for this concert
 $stmt = $pdo->prepare("
     SELECT
         t.*,
@@ -347,7 +375,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$user_id, $concert_id]);
 $transport_options = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-/* ===================== FETCH TRANSPORT JOIN USERS ===================== */
+# get joined users for each transportation option
 $transport_join_users = [];
 
 foreach ($transport_options as $transport) {
@@ -412,49 +440,61 @@ $add_transport_button = $is_going
                         <div class="planning-summary-top">
                             <div class="planning-summary-title"><?php echo h($transport['title']); ?></div>
 
-                <?php if ($can_delete_transport): ?>
-                    <form
-                        method="post"
-                        id="deleteTransportForm<?php echo (int)$transport['transport_id']; ?>"
-                        onsubmit="return confirm('Delete this transportation option?');"
-                    >
-                        <input type="hidden" name="action" value="delete_transport">
-                        <input type="hidden" name="transport_id" value="<?php echo (int)$transport['transport_id']; ?>">
-                    </form>
+<div class="planning-summary-actions" onclick="event.stopPropagation();">
+    <?php if ($is_going && $can_edit_transport): ?>
+        <a
+            href="#"
+            class="text-action-btn"
+            onclick="event.preventDefault(); openModal('editTransportModal<?php echo (int)$transport['transport_id']; ?>');"
+        >
+            Edit
+        </a>
+    <?php endif; ?>
 
-                    <a
-                        href="#"
-                        class="text-action-btn delete-action"
-                        onclick="event.preventDefault(); document.getElementById('deleteTransportForm<?php echo (int)$transport['transport_id']; ?>').requestSubmit();"
-                    >
-                        Delete
-                    </a>
-                <?php endif; ?>
+    <?php if ($can_delete_transport): ?>
+        <form
+            method="post"
+            id="deleteTransportForm<?php echo (int)$transport['transport_id']; ?>"
+            onsubmit="return confirm('Delete this transportation option?');"
+        >
+            <input type="hidden" name="action" value="delete_transport">
+            <input type="hidden" name="transport_id" value="<?php echo (int)$transport['transport_id']; ?>">
+        </form>
 
-<?php if ((int)$transport['user_id'] !== $user_id): ?>
-    <?php render_report_button('transport', $transport['transport_id'], 'Report'); ?>
-<?php endif; ?>
-                        </div>
+        <a
+            href="#"
+            class="text-action-btn delete-action"
+            onclick="event.preventDefault(); document.getElementById('deleteTransportForm<?php echo (int)$transport['transport_id']; ?>').requestSubmit();"
+        >
+            Delete
+        </a>
+    <?php endif; ?>
 
-                        <div class="planning-summary-line">
-                            <strong>Arrival:</strong>
-                            <?php echo h(format_option_datetime($transport['arrival_date'], $transport['arrival_time'] ?? null, $transport['include_time'])); ?>
-                        </div>
+    <?php if ((int)$transport['user_id'] !== $user_id): ?>
+        <?php render_report_button('transport', $transport['transport_id'], 'Report'); ?>
+    <?php endif; ?>
+</div>
 
-                        <div class="planning-summary-line">
-                            <strong>Departure:</strong>
-                            <?php echo h(format_option_datetime($transport['departure_date'], $transport['departure_time'] ?? null, $transport['include_time'])); ?>
-                        </div>
+</div>
+<div class="planning-summary-line">
+    <strong>Arrival:</strong>
+    <?php echo h(format_option_datetime($transport['arrival_date'], $transport['arrival_time'] ?? null, $transport['include_time'])); ?>
+</div>
 
-                        <div class="planning-summary-line">
-                            <strong>Total Cost:</strong>
-                            <?php echo $transport['total_cost'] !== null && $transport['total_cost'] !== '' ? '$' . number_format((float)$transport['total_cost'], 2) : '—'; ?>
-                        </div>
+<div class="planning-summary-line">
+    <strong>Departure:</strong>
+    <?php echo h(format_option_datetime($transport['departure_date'], $transport['departure_time'] ?? null, $transport['include_time'])); ?>
+</div>
 
-                        <div class="planning-summary-line">
-                            <strong>Cost Per Person:</strong>
-                            <?php echo $transport_cost_per_person !== null ? '$' . number_format((float)$transport_cost_per_person, 2) : '—'; ?>
-                        </div>
+<div class="planning-summary-line">
+    <strong>Total Cost:</strong>
+    <?php echo $transport['total_cost'] !== null && $transport['total_cost'] !== '' ? '$' . number_format((float)$transport['total_cost'], 2) : '—'; ?>
+</div>
+
+<div class="planning-summary-line">
+    <strong>Cost Per Person:</strong>
+    <?php echo $transport_cost_per_person !== null ? '$' . number_format((float)$transport_cost_per_person, 2) : '—'; ?>
+</div>
 
 <div class="planning-meta-row">
     <div class="left">@<?php echo h($transport['username']); ?></div>
@@ -465,12 +505,12 @@ $add_transport_button = $is_going
                 <input type="hidden" name="action" value="toggle_join_transport">
                 <input type="hidden" name="transport_id" value="<?php echo (int)$transport['transport_id']; ?>">
 
-<button
-    type="submit"
-    class="btn rsvp-toggle-btn <?php echo ((int)$transport['user_joined'] === 1) ? 'not-going' : 'going'; ?>"
->
-    <?php echo ((int)$transport['user_joined'] === 1) ? 'Leave' : 'Join'; ?>
-</button>
+    <button
+        type="submit"
+        class="btn rsvp-toggle-btn <?php echo ((int)$transport['user_joined'] === 1) ? 'not-going' : 'going'; ?>"
+    >
+        <?php echo ((int)$transport['user_joined'] === 1) ? 'Leave' : 'Join'; ?>
+    </button>
             </form>
         <?php else: ?>
             <button type="button" class="btn" onclick="alert('You are not going to this event!')">
@@ -489,44 +529,41 @@ $add_transport_button = $is_going
         </a>
     </div>
 </div>
-                    </div>
-                </div>
+</div>
+    </div>
+    <?php if ((int)$transport['user_id'] !== $user_id): ?>
+            <?php render_report_modal('transport', $transport['transport_id'], 'Report Transportation'); ?>
+            <?php endif; ?>
+        
+        <div id="transportDetailsModal<?php echo (int)$transport['transport_id']; ?>" class="modal">
+            <div class="modal-content housing-details-modal">
+                <span class="close-btn" onclick="closeModal('transportDetailsModal<?php echo (int)$transport['transport_id']; ?>')">&times;</span>
+                <h2 class="housing-modal-title"><?php echo h($transport['title']); ?></h2>
 
-                <?php if ((int)$transport['user_id'] !== $user_id): ?>
-    <?php render_report_modal('transport', $transport['transport_id'], 'Report Transportation'); ?>
-<?php endif; ?>
+                <p>
+                    <strong>Link:</strong>
+                    <?php if (!empty($transport['link'])): ?>
+                        <a
+                            href="<?php echo h($transport['link']); ?>"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="inline-link"
+                        >
+                            Link
+                        </a>
+                    <?php else: ?>
+                        —
+                    <?php endif; ?>
+                </p>
 
-                <div id="transportDetailsModal<?php echo (int)$transport['transport_id']; ?>" class="modal">
-                    <div class="modal-content housing-details-modal">
-                        <span class="close-btn" onclick="closeModal('transportDetailsModal<?php echo (int)$transport['transport_id']; ?>')">&times;</span>
-
-                        <h2 class="housing-modal-title"><?php echo h($transport['title']); ?></h2>
-
-
-<p>
-    <strong>Link:</strong>
-    <?php if (!empty($transport['link'])): ?>
-        <a
-            href="<?php echo h($transport['link']); ?>"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="inline-link"
-        >
-            Link
-        </a>
-    <?php else: ?>
-        —
-    <?php endif; ?>
-</p>
-
-<p>
-    <strong>Notes:</strong>
-    <?php echo !empty($transport['notes']) ? nl2br(h($transport['notes'])) : '—'; ?>
-</p>
+                <p>
+                    <strong>Notes:</strong>
+                    <?php echo !empty($transport['notes']) ? nl2br(h($transport['notes'])) : '—'; ?>
+                </p>
 
 
-                    </div>
-                </div>
+            </div>
+        </div>
 
                 <div id="transportMembersModal<?php echo (int)$transport['transport_id']; ?>" class="modal">
                     <div class="modal-content">
@@ -570,6 +607,7 @@ $add_transport_button = $is_going
                     </div>
                 </div>
 
+                <!-- edit transportation modal -->
                 <?php if ($is_going && $can_edit_transport): ?>
                     <div id="editTransportModal<?php echo (int)$transport['transport_id']; ?>" class="modal">
                         <div class="modal-content">
@@ -581,7 +619,7 @@ $add_transport_button = $is_going
                                 <input type="hidden" name="transport_id" value="<?php echo (int)$transport['transport_id']; ?>">
 
                                 <label>Title:</label>
-                                <input type="text" name="title" value="<?php echo h($transport['title']); ?>" required>
+                                <input type="text" name="title" maxlength="50" value="<?php echo h($transport['title']); ?>" required>
 
                                 <label>Arrival Date:</label>
                                 <input type="date" name="arrival_date" value="<?php echo h($transport['arrival_date']); ?>" required>
@@ -641,20 +679,20 @@ $add_transport_button = $is_going
                                 </div>
 
                                 <label>Link (optional):</label>
-                                <input type="url" name="link" value="<?php echo h($transport['link'] ?? ''); ?>">
+                                <input type="url" name="link" maxlength="500" value="<?php echo h($transport['link'] ?? ''); ?>">
 
-                                <label>Notes:</label>
-                                <textarea name="notes"><?php echo h($transport['notes'] ?? ''); ?></textarea>
+                                                                <label>Notes:</label>
+                                <textarea name="notes" maxlength="500"><?php echo h($transport['notes'] ?? ''); ?></textarea>
 
-                                <button type="submit" class="btn">Save Changes</button>
-                            </form>
-                        </div>
-                    </div>
-                <?php endif; ?>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
-</div>
+                                                                <button type="submit" class="btn">Save Changes</button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                <?php endif; ?>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
 
 <div id="transportModal" class="modal">
     <div class="modal-content">
@@ -665,7 +703,7 @@ $add_transport_button = $is_going
             <input type="hidden" name="action" value="add_transport">
 
             <label>Title:</label>
-            <input type="text" name="title" required>
+<input type="text" name="title" maxlength="50" required>
 
             <label>Arrival Date:</label>
             <input type="date" name="arrival_date" required>
@@ -715,10 +753,10 @@ $add_transport_button = $is_going
             </div>
 
             <label>Link (optional):</label>
-            <input type="url" name="link">
+            <input type="url" name="link" maxlength="500">
 
             <label>Notes:</label>
-            <textarea name="notes"></textarea>
+            <textarea name="notes" maxlength="500"></textarea>
 
             <button type="submit" class="btn primary-action-btn">Save Transportation</button>
         </form>

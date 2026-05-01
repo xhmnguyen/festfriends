@@ -3,7 +3,7 @@ require_once("../session.php");
 require_once("../database.php");
 require_once("../report_functions.php");
 
-/* ===================== VALIDATION ===================== */
+# validate
 $concert_id = (int)($_GET['concert_id'] ?? 0);
 $user_id = (int)($_SESSION['user_id'] ?? 0);
 
@@ -15,7 +15,7 @@ if ($user_id <= 0) {
     die("You must be logged in.");
 }
 
-/* ===================== HELPERS ===================== */
+# helper function
 if (!function_exists('h')) {
     function h($v) {
         return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
@@ -34,7 +34,7 @@ function get_image_src($path, $default = "../assets/images/default.jpg") {
     return "../" . ltrim($path, '/');
 }
 
-/* ===================== FETCH CONCERT ===================== */
+# fetch concert with group info
 $stmt = $pdo->prepare("
     SELECT
         gc.*,
@@ -51,7 +51,7 @@ if (!$concert) {
     die("Concert not found.");
 }
 
-/* ===================== ACCESS ===================== */
+# check if user is approved member of the group
 $stmt = $pdo->prepare("
     SELECT 1
     FROM group_member
@@ -63,7 +63,7 @@ if (!$stmt->fetchColumn()) {
     die("No access.");
 }
 
-/* ===================== RSVP ===================== */
+# get current user's RSVP status
 $stmt = $pdo->prepare("
     SELECT status
     FROM concert_rsvp
@@ -73,7 +73,7 @@ $stmt->execute([$concert_id, $user_id]);
 $current_rsvp = $stmt->fetchColumn();
 $is_going = ($current_rsvp === 'going');
 
-/* ===================== RSVP LIST ===================== */
+# get all RSVP
 $stmt = $pdo->prepare("
     SELECT u.username, u.full_name, u.image, cr.status
     FROM concert_rsvp cr
@@ -99,7 +99,6 @@ foreach ($rsvp_users as $r) {
 
 $concert_image_src = get_image_src($concert['image'] ?? null);
 
-/* ===================== HEADER ===================== */
 function render_concert_header($concert, $img, $current_rsvp, $going, $not) {
     global $user_id;
 
@@ -175,7 +174,7 @@ function render_concert_header($concert, $img, $current_rsvp, $going, $not) {
 <?php
 }
 
-/* ===================== TABS ===================== */
+# concert tabs
 function render_concert_tabs($concert_id, $active) {
 ?>
 <div class="tabs">
@@ -191,7 +190,7 @@ function render_concert_tabs($concert_id, $active) {
 <?php
 }
 
-/* ===================== ACTION ROW ===================== */
+# concert action
 function render_concert_action_row($concert_id, $active, $button_html = '', $right_html = '') {
 ?>
 <div class="concert-actions-row">
@@ -205,7 +204,7 @@ function render_concert_action_row($concert_id, $active, $button_html = '', $rig
 <?php
 }
 
-/* ===================== RSVP MODAL ===================== */
+# rsvp modal
 function render_rsvp_modal($going, $not) {
 ?>
 <div id="rsvpModal" class="modal">
@@ -214,60 +213,64 @@ function render_rsvp_modal($going, $not) {
 
         <h3 class="text-center mt-20">RSVP</h3>
 
-        <h4 class="mt-20">Going</h4>
+        <h4 class="mt-20">Going: <?php echo count($going); ?></h4>
 
         <?php if (empty($going)): ?>
             <p>No one is going yet.</p>
         <?php else: ?>
-            <div class="members-grid mt-20">
-                <?php foreach ($going as $u): ?>
-                    <div class="member-item">
+            <?php foreach ($going as $u): ?>
+                <div class="members-card-top" style="padding: 12px 0; border-bottom: 1px solid #ececec;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
                         <?php if (!empty($u['image'])): ?>
-                            <img
-                                src="../<?php echo h($u['image']); ?>"
-                                alt="Profile"
-                                class="member-avatar-img"
-                            >
+                            <img src="../<?php echo h($u['image']); ?>" alt="Profile" class="member-avatar-img">
                         <?php else: ?>
                             <div class="member-avatar-fallback">
                                 <?php echo h(strtoupper(substr($u['full_name'] ?? $u['username'], 0, 1))); ?>
                             </div>
                         <?php endif; ?>
 
-                        <div class="member-name">
-                            @<?php echo h($u['username']); ?>
+                        <div>
+                            <div class="member-name" style="font-size: 0.95rem;">
+                                <?php echo h($u['full_name'] ?: $u['username']); ?>
+                            </div>
+
+                            <div class="group-owner">
+                                @<?php echo h($u['username']); ?>
+                            </div>
                         </div>
                     </div>
-                <?php endforeach; ?>
-            </div>
+                </div>
+            <?php endforeach; ?>
         <?php endif; ?>
 
-        <h4 class="mt-20">Not Going</h4>
+        <h4 class="mt-20">Not Going: <?php echo count($not); ?></h4>
 
         <?php if (empty($not)): ?>
             <p>No one marked not going.</p>
         <?php else: ?>
-            <div class="members-grid mt-20">
-                <?php foreach ($not as $u): ?>
-                    <div class="member-item">
+            <?php foreach ($not as $u): ?>
+                <div class="members-card-top" style="padding: 12px 0; border-bottom: 1px solid #ececec;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
                         <?php if (!empty($u['image'])): ?>
-                            <img
-                                src="../<?php echo h($u['image']); ?>"
-                                alt="Profile"
-                                class="member-avatar-img"
-                            >
+                            <img src="../<?php echo h($u['image']); ?>" alt="Profile" class="member-avatar-img">
                         <?php else: ?>
                             <div class="member-avatar-fallback">
                                 <?php echo h(strtoupper(substr($u['full_name'] ?? $u['username'], 0, 1))); ?>
                             </div>
                         <?php endif; ?>
 
-                        <div class="member-name">
-                            @<?php echo h($u['username']); ?>
+                        <div>
+                            <div class="member-name" style="font-size: 0.95rem;">
+                                <?php echo h($u['full_name'] ?: $u['username']); ?>
+                            </div>
+
+                            <div class="group-owner">
+                                @<?php echo h($u['username']); ?>
+                            </div>
                         </div>
                     </div>
-                <?php endforeach; ?>
-            </div>
+                </div>
+            <?php endforeach; ?>
         <?php endif; ?>
     </div>
 </div>

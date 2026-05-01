@@ -21,7 +21,7 @@ if ($search !== '') {
     $search_results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-/* ===================== FETCH USER GROUPS ===================== */
+# get all groups the user is a member of
 $stmt = $pdo->prepare("
     SELECT 
         ug.group_id,
@@ -38,7 +38,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$user_id]);
 $groups = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-/* ===================== FETCH MEMBER COUNTS ===================== */
+# get member counts for each group
 $group_ids = array_column($groups, 'group_id');
 $members_count = [];
 
@@ -57,35 +57,34 @@ if (!empty($group_ids)) {
         $members_count[$row['group_id']] = $row['count'];
     }
 }
-
-/* ===================== FETCH UPCOMING CONCERTS ===================== */
+# get upcoming concerts the user is attending through their groups
 $stmt = $pdo->prepare("
     SELECT gc.*, ug.name AS group_name
     FROM group_concert gc
     JOIN user_group ug ON gc.group_id = ug.group_id
     JOIN concert_rsvp cr ON gc.group_concert_id = cr.group_concert_id
+    JOIN group_member gm ON gc.group_id = gm.group_id
     WHERE cr.user_id = ?
       AND cr.status = 'going'
+      AND gm.user_id = ?
+      AND gm.status = 'approved'
       AND (gc.end_date IS NULL OR gc.end_date >= CURDATE())
     ORDER BY gc.start_date ASC
 ");
-$stmt->execute([$user_id]);
+
+$stmt->execute([$user_id, $user_id]);
 $upcoming_concerts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <div class="container">
 
-    <div class="text-center" style="display: flex; justify-content: center; gap: 12px; margin: 10px 0;">
-    <a href="groups/create_group.php" class="btn post-btn">Create Group</a>
-
-<a href="discover.php" class="btn">
-    Join Group
-</a>
-</div>
+    <div class="text-center" style="display:flex; justify-content:center; gap:12px; margin:10px 0;">
+        <a href="groups/create_group.php" class="btn post-btn">Create Group</a>
+        <a href="discover.php" class="btn">Join Group</a>
+    </div>
 
 
-
-    <!-- ===================== USER GROUPS ===================== -->
+<!-- groups section -->
     <h2>My Groups</h2>
 
     <div class="flex">
@@ -106,9 +105,7 @@ $upcoming_concerts = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <?php echo htmlspecialchars($group['name']); ?>
                             </div>
 
-                            <div class="group-description">
-                                <?php echo htmlspecialchars($group['description']); ?>
-                            </div>
+
 
                             <div class="group-info" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                                 <span>
@@ -127,7 +124,7 @@ $upcoming_concerts = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <?php endif; ?>
     </div>
 
-    <!-- ===================== UPCOMING CONCERTS ===================== -->
+<!-- concerts section -->
 <h2 style="margin-top: 25px;">Upcoming Festivals</h2>
 
     <div class="flex">
@@ -183,7 +180,7 @@ $upcoming_concerts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         <h3 class="text-center mt-20">Join a Group</h3>
 
-        <!-- SEARCH FORM -->
+        <!-- search form -->
         <form method="get" style="margin-top: 15px;">
             <input
                 type="text"
@@ -198,7 +195,7 @@ $upcoming_concerts = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </button>
         </form>
 
-        <!-- RESULTS -->
+        <!-- search results -->
         <?php if ($search !== ''): ?>
             <div style="margin-top: 20px;">
                 <?php if (empty($search_results)): ?>

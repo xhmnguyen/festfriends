@@ -20,6 +20,7 @@ function h($value) {
     return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 }
 
+# set default image
 function get_image_src($path, $default = "../assets/images/default.jpg") {
     if (empty($path)) {
         return $default;
@@ -34,6 +35,7 @@ function get_image_src($path, $default = "../assets/images/default.jpg") {
     return "../" . ltrim($path, "/");
 }
 
+# format concert dates
 function format_concert_dates($start_date, $end_date = null) {
     $start = date("F j, Y", strtotime($start_date));
     $end = !empty($end_date) ? date("F j, Y", strtotime($end_date)) : "";
@@ -45,7 +47,7 @@ function format_concert_dates($start_date, $end_date = null) {
     return $start;
 }
 
-/* ===================== FETCH GROUP ===================== */
+# get group details
 $stmt = $pdo->prepare("
     SELECT ug.*, u.username AS owner_username
     FROM user_group ug
@@ -59,7 +61,7 @@ if (!$group) {
     die("Group not found.");
 }
 
-/* ===================== MEMBERSHIP CHECK ===================== */
+# check if user is a member
 $stmt = $pdo->prepare("
     SELECT *
     FROM group_member
@@ -70,7 +72,7 @@ $is_member = $stmt->rowCount() > 0;
 
 $is_owner = ((int)$group['owner_id'] === (int)$user_id);
 
-/* ===================== POST ACTIONS ===================== */
+# handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     handle_submit_report($pdo, $user_id);
 
@@ -84,6 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = "Join request sent.";
     }
 
+    // members can leave group
     if (!$is_owner && $is_member && isset($_POST['leave_group'])) {
         $stmt = $pdo->prepare("
             DELETE FROM group_member
@@ -95,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
+    // only group owner can handle requests, remove members, and remove concerts
     if ($is_owner && isset($_POST['handle_request'])) {
         $request_user = intval($_POST['request_user'] ?? 0);
         $action = $_POST['action'] ?? '';
@@ -122,6 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
+    // group owner can remove members and concerts
     if ($is_owner && isset($_POST['remove_member'])) {
         $remove_user_id = intval($_POST['remove_user_id'] ?? 0);
 
@@ -137,6 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
+    // group owner can remove concerts
     if ($is_owner && isset($_POST['remove_concert'])) {
         $remove_concert_id = intval($_POST['remove_concert_id'] ?? 0);
 
@@ -153,7 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-/* ===================== FETCH MEMBERS ===================== */
+// fetch members
 $stmt = $pdo->prepare("
     SELECT u.user_id, u.username, u.full_name, u.image
     FROM user u
@@ -164,9 +170,9 @@ $stmt = $pdo->prepare("
 $stmt->execute([$group_id]);
 $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-/* ===================== FETCH PENDING REQUESTS ===================== */
 $pending_requests = [];
 
+// if owner, get pending requests
 if ($is_owner) {
     $stmt = $pdo->prepare("
         SELECT u.user_id, u.username, u.full_name, u.image
@@ -179,7 +185,7 @@ if ($is_owner) {
     $pending_requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-/* ===================== CHECK PENDING REQUEST ===================== */
+// if not member, check if there's a pending request
 $stmt = $pdo->prepare("
     SELECT *
     FROM group_member
@@ -188,7 +194,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$group_id, $user_id]);
 $pending_request = $stmt->fetch(PDO::FETCH_ASSOC);
 
-/* ===================== FETCH CONCERTS ===================== */
+// get concerts
 $stmt = $pdo->prepare("
     SELECT *
     FROM group_concert
@@ -225,7 +231,6 @@ $group_image_src = get_image_src($group['image'] ?? null);
 
 <div class="container">
 
-    <!-- ===================== GROUP HEADER ===================== -->
     <div class="group-header">
         <img
             class="group-header-img"
@@ -243,9 +248,9 @@ $group_image_src = get_image_src($group['image'] ?? null);
                         Edit
                     </a>
                 <?php endif; ?>
-<?php if (!$is_owner): ?>
-    <?php render_report_button('group', $group_id, 'Report'); ?>
-<?php endif; ?>
+                <?php if (!$is_owner): ?>
+                    <?php render_report_button('group', $group_id, 'Report'); ?>
+                <?php endif; ?>
             </div>
 
             <div class="group-header-name"><?php echo h($group['name']); ?></div>
@@ -309,7 +314,7 @@ $group_image_src = get_image_src($group['image'] ?? null);
         <p class="text-center">Your request is pending approval.</p>
     <?php endif; ?>
 
-<!-- ===================== UPCOMING CONCERTS ===================== -->
+<!-- upcoming concerts -->
 <h2>Upcoming Festivals</h2>
 
 <?php if (empty($upcoming_concerts)): ?>
@@ -339,7 +344,7 @@ $group_image_src = get_image_src($group['image'] ?? null);
         <?php endforeach; ?>
     </div>
 <?php endif; ?>
-<!-- ===================== PAST CONCERTS ===================== -->
+<!-- past concerts -->
 <h2>Past Festivals</h2>
 
 <?php if (empty($past_concerts)): ?>
@@ -368,51 +373,70 @@ $group_image_src = get_image_src($group['image'] ?? null);
     </div>
 <?php endif; ?>
 
-<!-- ===================== MEMBERS MODAL ===================== -->
+<!-- members modal -->
 <div id="membersModal" class="modal">
     <div class="modal-content">
         <span class="close-btn" onclick="closeModal('membersModal')">&times;</span>
 
         <h3 class="text-center mt-20">Members</h3>
 
-        <div class="members-grid mt-20">
+        <?php if (empty($members)): ?>
+            <p class="mt-20">No members found.</p>
+        <?php else: ?>
             <?php foreach ($members as $member): ?>
-                <div class="member-item">
-                    <?php if (!empty($member['image'])): ?>
-                        <img
-                            src="../<?php echo h($member['image']); ?>"
-                            alt="Profile"
-                            class="member-avatar-img"
-                        >
-                    <?php else: ?>
-                        <div class="member-avatar-fallback">
-                            <?php echo h(strtoupper(substr($member['full_name'] ?? $member['username'], 0, 1))); ?>
-                        </div>
-                    <?php endif; ?>
+                <div
+                    class="members-card-top"
+                    style="padding: 12px 0; border-bottom: 1px solid #ececec;"
+                >
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <?php if (!empty($member['image'])): ?>
+                            <img
+                                src="../<?php echo h($member['image']); ?>"
+                                alt="Profile"
+                                class="member-avatar-img"
+                            >
+                        <?php else: ?>
+                            <div class="member-avatar-fallback">
+                                <?php echo h(strtoupper(substr($member['full_name'] ?? $member['username'], 0, 1))); ?>
+                            </div>
+                        <?php endif; ?>
 
-                    <div class="member-name">
-                        @<?php echo h($member['username']); ?>
+                        <div>
+                            <div class="member-name" style="font-size: 0.95rem;">
+                                <?php echo h($member['full_name'] ?: $member['username']); ?>
+                            </div>
+
+                            <div class="group-owner">
+                                @<?php echo h($member['username']); ?>
+                            </div>
+                        </div>
                     </div>
 
                     <?php if ($is_owner && (int)$member['user_id'] !== (int)$user_id): ?>
                         <form
                             method="post"
-                            class="remove-member-form"
+                            class="post-actions"
                             onsubmit="return confirm('Remove this member from the group?');"
                         >
                             <input type="hidden" name="remove_user_id" value="<?php echo (int)$member['user_id']; ?>">
-                            <button type="submit" name="remove_member" value="1" class="remove-member-btn">
+
+                            <button
+                                type="submit"
+                                name="remove_member"
+                                value="1"
+                                class="btn delete-btn"
+                            >
                                 Remove
                             </button>
                         </form>
                     <?php endif; ?>
                 </div>
             <?php endforeach; ?>
-        </div>
+        <?php endif; ?>
     </div>
 </div>
 
-<!-- ===================== REQUESTS MODAL ===================== -->
+<!-- requests modal -->
 <?php if ($is_owner): ?>
     <div id="requestsModal" class="modal">
         <div class="modal-content">

@@ -38,7 +38,7 @@ function upload_gallery_image($file_input_name) {
     return null;
 }
 
-/* ===================== FETCH GROUP ===================== */
+# get group concert
 $stmt = $pdo->prepare("
     SELECT *
     FROM user_group
@@ -53,7 +53,7 @@ if (!$group) {
 
 $is_group_owner = ((int)$group['owner_id'] === $user_id);
 
-/* ===================== HANDLE ACTIONS ===================== */
+# handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     handle_submit_report($pdo, $user_id);
@@ -156,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-/* ===================== REFRESH RSVP ===================== */
+# get rsvp info
 $stmt = $pdo->prepare("
     SELECT status
     FROM concert_rsvp
@@ -187,7 +187,7 @@ foreach ($rsvp_users as $r) {
     }
 }
 
-/* ===================== FETCH GALLERY IMAGES ===================== */
+# get gallery images
 $stmt = $pdo->prepare("
     SELECT
         gi.*,

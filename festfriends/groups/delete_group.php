@@ -7,7 +7,7 @@ if (!isset($_GET['group_id'])) {
 }
 $group_id = intval($_GET['group_id']);
 
-// Check if current user is the owner
+# check if the user is the owner of the group
 $stmt = $pdo->prepare("SELECT owner_id FROM user_group WHERE group_id = ?");
 $stmt->execute([$group_id]);
 $group = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -20,7 +20,7 @@ if ($group['owner_id'] != $_SESSION['user_id']) {
     die("You are not the owner of this group.");
 }
 
-// Delete the group
+# delete the group
 $stmt = $pdo->prepare("DELETE FROM user_group WHERE group_id = ?");
 $stmt->execute([$group_id]);
 

@@ -4,7 +4,7 @@ require_once("../database.php");
 require_once("../included_functions.php");
 
 if (!isset($_GET['group_id'])) {
-    die("Group ID not provided.");
+    die("Festival ID not provided.");
 }
 
 if (!isset($_SESSION['user_id'])) {
@@ -26,6 +26,7 @@ $stmt = $pdo->prepare("SELECT * FROM user_group WHERE group_id = ?");
 $stmt->execute([$group_id]);
 $group = $stmt->fetch(PDO::FETCH_ASSOC);
 
+# berify group exists and user is owner
 if (!$group) {
     die("Group not found.");
 }
@@ -34,6 +35,7 @@ if ((int)$group['owner_id'] !== $user_id) {
     die("Only the group owner can create festivals.");
 }
 
+# form submission handling
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name'] ?? '');
     $location = trim($_POST['location'] ?? '');
@@ -47,7 +49,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($name === '' || $start_date === '') {
-        $error = "Concert name and start date are required.";
+        $error = "Festival name and start date are required.";
+    } elseif (strlen($name) > 100) {
+        $error = "Festival name must be 100 characters or fewer.";
+    } elseif (strlen($location) > 100) {
+        $error = "Location must be 100 characters or fewer.";
     }
 
     if ($existing_image !== '') {
@@ -74,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
                 $image_path = "uploads/concerts/" . $file_name;
             } else {
-                $error = "Failed to upload concert image.";
+                $error = "Failed to upload festival image.";
             }
         }
     }
@@ -115,6 +121,7 @@ function h($value) {
 </head>
 <body>
 
+<!-- header -->
 <div class="container flex" style="justify-content:center; margin-top:50px;">
     <div class="card" style="max-width:700px; width:100%;">
         <h1 class="text-center">Create Festival</h1>
@@ -141,11 +148,9 @@ function h($value) {
             <input type="hidden" name="existing_image" id="existing_image">
 
             <label>Festival Name:</label>
-            <input type="text" name="name" id="name" value="<?php echo h($name); ?>" required>
-
+            <input type="text" name="name" id="name" value="<?php echo h($name); ?>" maxlength="100" required>
             <label>Location:</label>
-            <input type="text" name="location" id="location" value="<?php echo h($location); ?>">
-
+            <input type="text" name="location" id="location" value="<?php echo h($location); ?>" maxlength="100">
             <label>Start Date:</label>
             <input type="date" name="start_date" id="start_date" value="<?php echo h($start_date); ?>" required>
 
@@ -181,6 +186,7 @@ function h($value) {
 <script>
 let searchConcertData = [];
 
+// search concerts using API and display results
 async function searchConcerts() {
     const keyword = document.getElementById('concertSearchInput').value.trim();
     const resultsBox = document.getElementById('searchResults');
@@ -213,7 +219,7 @@ async function searchConcerts() {
         }
 
         if (!Array.isArray(data) || data.length === 0) {
-            resultsBox.innerHTML = '<p>No concerts found.</p>';
+            resultsBox.innerHTML = '<p>No festivals found.</p>';
             return;
         }
 
@@ -240,6 +246,7 @@ async function searchConcerts() {
     }
 }
 
+// when a concert is selected from search results, populate form fields
 function selectConcert(index) {
     const concert = searchConcertData[index];
 

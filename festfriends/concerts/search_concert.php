@@ -25,6 +25,7 @@ if (!defined('TICKETMASTER_API_KEY') || trim(TICKETMASTER_API_KEY) === '') {
     exit;
 }
 
+# check if eventbrite token is set, if not, skip and return ticketmaster results
 function safe_get_json($url, $headers = []) {
     $header_string = "";
 
@@ -75,6 +76,7 @@ function safe_get_json($url, $headers = []) {
     return $decoded;
 }
 
+// normalize concert names 
 function normalize_name($name) {
     $name = strtolower(trim((string)$name));
     $name = preg_replace('/day\s*\d+/i', '', $name);
@@ -83,6 +85,7 @@ function normalize_name($name) {
     return trim($name);
 }
 
+// fetch and process ticketmaster results, group by normalized name, and return array of concerts with details
 function ticketmaster_results($keyword) {
     $url = "https://app.ticketmaster.com/discovery/v2/events.json?" . http_build_query([
         'apikey' => TICKETMASTER_API_KEY,
@@ -105,6 +108,7 @@ function ticketmaster_results($keyword) {
 
     $grouped = [];
 
+    // group events by normalized name and aggregate dates
     foreach ($data['_embedded']['events'] as $event) {
         $raw_name = trim($event['name'] ?? '');
         $date = $event['dates']['start']['localDate'] ?? null;
@@ -182,6 +186,7 @@ function ticketmaster_results($keyword) {
     return $results;
 }
 
+// fetch and process eventbrite results, return array of concerts with details
 function eventbrite_results($keyword) {
     if (!defined('EVENTBRITE_API_TOKEN') || trim(EVENTBRITE_API_TOKEN) === '') {
         return [];

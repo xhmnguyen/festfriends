@@ -1678,3 +1678,54 @@ footer {
   color: #eab308 !important;
 }
 
+
+.stage-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 20px 0;
+}
+
+.stage-toggle-left {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.stage-toggle-right {
+    margin-left: auto;
+}
+
+.stage-toggle-btn {
+    display: inline-block;
+    padding: 10px 18px;
+    background: #ffffff;        /* solid white button */
+    color: #888888;             /* gray text */
+    border: 1px solid #d8d8d8;
+    border-radius: 8px;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.stage-toggle-btn:hover,
+.stage-toggle-btn.active {
+    background: #ffffff;        /* keep white on hover/active */
+    color: #555555;             /* slightly darker gray on hover */
+}
+
+.artist-interest-box {
+    margin-top: 18px;
+    padding: 14px;
+    background: #f8f9fb;
+    border-radius: 12px;
+}
+
+.artist-interest-box h4 {
+    margin-bottom: 10px;
+}
+
+.muted-text {
+    color: #6b7280;
+}

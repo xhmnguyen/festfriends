@@ -99,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
 
         if (isset($_POST['delete_account'])) {
 
-            // delete related data first (prevents foreign key issues)
+            # delete all user-related data
             $stmt = $pdo->prepare("DELETE FROM general_post_vote WHERE user_id = ?");
             $stmt->execute([$_SESSION['user_id']]);
 
@@ -121,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
             $stmt = $pdo->prepare("DELETE FROM group_member WHERE user_id = ?");
             $stmt->execute([$_SESSION['user_id']]);
 
-            // finally delete user
+            # delete user account
             $stmt = $pdo->prepare("DELETE FROM user WHERE user_id = ?");
             $stmt->execute([$_SESSION['user_id']]);
 
@@ -208,13 +208,13 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
 
         <hr class="mt-20">
 
-        <div class="text-center mt-20">
-            <form method="post" onsubmit="return confirmDelete();">
-                <button type="submit" name="delete_account" class="btn delete-btn">
-                    Delete Account
-                </button>
-            </form>
-        </div>
+<div class="text-center mt-20">
+    <form method="post" onsubmit="return confirmDelete();">
+        <button type="submit" name="delete_account" class="btn delete-btn">
+            Delete Account
+        </button>
+    </form>
+</div>
 
         <div class="text-center mt-20">
             <a href="logout.php" class="btn">Log Out</a>
@@ -222,6 +222,12 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
 
     </div>
 </div>
+
+<script>
+function confirmDelete() {
+    return confirm("Are you sure you want to delete your account? This action cannot be undone.");
+}
+</script>
 
 </body>
 </html>

@@ -5,7 +5,7 @@ require_once("../report_functions.php");
 
 $error = "";
 
-/* ===================== HELPERS ===================== */
+# helper
 function upload_image($file_input_name, $subfolder = 'posts') {
     if (
         empty($_FILES[$file_input_name]['name']) ||
@@ -79,7 +79,23 @@ function cost_per_person($total_cost, $max_people, $limited_spots, $joined_count
     return (float)$total_cost / $divisor;
 }
 
-/* ===================== FETCH GROUP ===================== */
+function validate_planning_text($title, $notes, $link) {
+    if (mb_strlen($title) > 50) {
+        return "Title must be 50 characters or less.";
+    }
+
+    if (mb_strlen($notes) > 200) {
+        return "Notes must be 200 characters or less.";
+    }
+
+    if (mb_strlen($link) > 500) {
+        return "Link must be 500 characters or less.";
+    }
+
+    return "";
+}
+
+# get concert
 $stmt = $pdo->prepare("
     SELECT *
     FROM user_group
@@ -94,7 +110,7 @@ if (!$group) {
 
 $is_group_owner = ((int)$group['owner_id'] === $user_id);
 
-/* ===================== HANDLE ACTIONS ===================== */
+# handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     handle_submit_report($pdo, $user_id);
@@ -153,9 +169,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $notes = trim($_POST['notes'] ?? '');
                 $image = upload_image('housing_image', 'posts');
 
-                if ($title === '' || $arrival_date === '' || $departure_date === '') {
-                    $error = "Housing title, arrival, and departure are required.";
-                } else {
+                $validation_error = validate_planning_text($title, $notes, $link);
+
+            if ($validation_error !== "") {
+                $error = $validation_error;
+            } elseif ($title === '' || $arrival_date === '' || $departure_date === '') {
+                $error = "Housing title, arrival, and departure are required.";
+            } else {
                     $stmt = $pdo->prepare("
                         INSERT INTO housing_option
                         (group_concert_id, user_id, title, arrival_date, departure_date, include_time, arrival_time, departure_time, total_cost, limited_spots, max_people, image, link, notes)
@@ -183,6 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
+            # only allow owner or creator to edit
             if ($action === 'edit_housing') {
                 $housing_id = (int)($_POST['housing_id'] ?? 0);
                 $title = trim($_POST['title'] ?? '');
@@ -217,7 +238,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $image = $new_image;
                 }
 
-                if ($title === '' || $arrival_date === '' || $departure_date === '') {
+                $validation_error = validate_planning_text($title, $notes, $link);
+
+                if ($validation_error !== "") {
+                    $error = $validation_error;
+                } elseif ($title === '' || $arrival_date === '' || $departure_date === '') {
                     $error = "Housing title, arrival, and departure are required.";
                 } else {
                     $stmt = $pdo->prepare("
@@ -339,7 +364,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-/* ===================== REFRESH RSVP ===================== */
+# get current user rsvp
 $stmt = $pdo->prepare("
     SELECT status
     FROM concert_rsvp
@@ -370,7 +395,7 @@ foreach ($rsvp_users as $r) {
     }
 }
 
-/* ===================== FETCH HOUSING ===================== */
+# get housing options 
 $stmt = $pdo->prepare("
     SELECT
         ho.*,
@@ -392,7 +417,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$user_id, $concert_id]);
 $housing_options = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-/* ===================== FETCH HOUSING JOIN USERS ===================== */
+# get joined users for each housing option
 $housing_join_users = [];
 
 foreach ($housing_options as $housing) {
@@ -463,64 +488,65 @@ $add_housing_button = $is_going
                     >
 
                     <div class="planning-summary-body">
-<div class="planning-summary-top">
-    <div class="planning-summary-title"><?php echo h($housing['title']); ?></div>
+                    <div class="planning-summary-top">
+                        <div class="planning-summary-title"><?php echo h($housing['title']); ?></div>
 
-    <div class="planning-summary-actions" onclick="event.stopPropagation();">
-        <?php if ($is_going && $can_edit_housing): ?>
-            <a
-                href="#"
-                class="text-action-btn"
-                onclick="event.preventDefault(); openModal('editHousingModal<?php echo (int)$housing['housing_id']; ?>');"
-            >
-                Edit
-            </a>
-        <?php endif; ?>
+                        <div class="planning-summary-actions" onclick="event.stopPropagation();">
+                            <?php if ($is_going && $can_edit_housing): ?>
+                                <a
+                                    href="#"
+                                    class="text-action-btn"
+                                    onclick="event.preventDefault(); openModal('editHousingModal<?php echo (int)$housing['housing_id']; ?>');"
+                                >
+                                    Edit
+                                </a>
+                            <?php endif; ?>
 
-        <?php if ($can_delete_housing): ?>
-            <form
-                method="post"
-                id="deleteHousingForm<?php echo (int)$housing['housing_id']; ?>"
-                onsubmit="return confirm('Delete this housing option?');"
-            >
-                <input type="hidden" name="action" value="delete_housing">
-                <input type="hidden" name="housing_id" value="<?php echo (int)$housing['housing_id']; ?>">
-            </form>
+                            <?php if ($can_delete_housing): ?>
+                                <form
+                                    method="post"
+                                    id="deleteHousingForm<?php echo (int)$housing['housing_id']; ?>"
+                                    onsubmit="return confirm('Delete this housing option?');"
+                                >
+                                    <input type="hidden" name="action" value="delete_housing">
+                                    <input type="hidden" name="housing_id" value="<?php echo (int)$housing['housing_id']; ?>">
+                                </form>
 
-            <a
-                href="#"
-                class="text-action-btn delete-action"
-                onclick="event.preventDefault(); document.getElementById('deleteHousingForm<?php echo (int)$housing['housing_id']; ?>').requestSubmit();"
-            >
-                Delete
-            </a>
-        <?php endif; ?>
+                                <a
+                                    href="#"
+                                    class="text-action-btn delete-action"
+                                    onclick="event.preventDefault(); document.getElementById('deleteHousingForm<?php echo (int)$housing['housing_id']; ?>').requestSubmit();"
+                                >
+                                    Delete
+                                </a>
+                            <?php endif; ?>
 
-        <?php if ((int)$housing['user_id'] !== $user_id): ?>
-            <?php render_report_button('housing', $housing['housing_id'], 'Report'); ?>
-        <?php endif; ?>
-    </div>
+                            <?php if ((int)$housing['user_id'] !== $user_id): ?>
+                                <?php render_report_button('housing', $housing['housing_id'], 'Report'); ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+<div class="planning-summary-line">
+    <strong>Arrival:</strong>
+    <?php echo h(format_option_datetime($housing['arrival_date'], $housing['arrival_time'] ?? null, $housing['include_time'])); ?>
 </div>
 
 <div class="planning-summary-line">
-                            <strong>Arrival:</strong>
-                            <?php echo h(format_option_datetime($housing['arrival_date'], $housing['arrival_time'] ?? null, $housing['include_time'])); ?>
-                        </div>
+    <strong>Departure:</strong>
+    <?php echo h(format_option_datetime($housing['departure_date'], $housing['departure_time'] ?? null, $housing['include_time'])); ?>
+</div>
 
-                        <div class="planning-summary-line">
-                            <strong>Departure:</strong>
-                            <?php echo h(format_option_datetime($housing['departure_date'], $housing['departure_time'] ?? null, $housing['include_time'])); ?>
-                        </div>
+<div class="planning-summary-line">
+    <strong>Total Cost:</strong>
+    <?php echo $housing['total_cost'] !== null && $housing['total_cost'] !== '' ? '$' . number_format((float)$housing['total_cost'], 2) : '—'; ?>
+</div>
 
-                        <div class="planning-summary-line">
-                            <strong>Total Cost:</strong>
-                            <?php echo $housing['total_cost'] !== null && $housing['total_cost'] !== '' ? '$' . number_format((float)$housing['total_cost'], 2) : '—'; ?>
-                        </div>
+<div class="planning-summary-line">
+    <strong>Cost Per Person:</strong>
+    <?php echo $housing_cost_per_person !== null ? '$' . number_format((float)$housing_cost_per_person, 2) : '—'; ?>
+</div>
 
-                        <div class="planning-summary-line">
-                            <strong>Cost Per Person:</strong>
-                            <?php echo $housing_cost_per_person !== null ? '$' . number_format((float)$housing_cost_per_person, 2) : '—'; ?>
-                        </div>
 <div class="planning-meta-row">
     <div class="left">@<?php echo h($housing['username']); ?></div>
 
@@ -555,16 +581,16 @@ $add_housing_button = $is_going
     </div>
 </div>
 
-                    </div>
-                </div>
+</div>
+</div>
 
-                <?php if ((int)$housing['user_id'] !== $user_id): ?>
+<?php if ((int)$housing['user_id'] !== $user_id): ?>
     <?php render_report_modal('housing', $housing['housing_id'], 'Report Housing'); ?>
 <?php endif; ?>
 
-                <div id="housingDetailsModal<?php echo (int)$housing['housing_id']; ?>" class="modal">
-                    <div class="modal-content housing-details-modal">
-                        <span class="close-btn" onclick="closeModal('housingDetailsModal<?php echo (int)$housing['housing_id']; ?>')">&times;</span>
+<div id="housingDetailsModal<?php echo (int)$housing['housing_id']; ?>" class="modal">
+    <div class="modal-content housing-details-modal">
+        <span class="close-btn" onclick="closeModal('housingDetailsModal<?php echo (int)$housing['housing_id']; ?>')">&times;</span>
 
 <img
     src="<?php echo h($housing_image); ?>"
@@ -597,9 +623,10 @@ $add_housing_button = $is_going
 
 
                         
-                    </div>
-                </div>
+</div>
+</div>
 
+<!-- members modal -->
 <div id="housingMembersModal<?php echo (int)$housing['housing_id']; ?>" class="modal">
     <div class="modal-content">
         <span class="close-btn" onclick="closeModal('housingMembersModal<?php echo (int)$housing['housing_id']; ?>')">&times;</span>
@@ -642,6 +669,7 @@ $add_housing_button = $is_going
     </div>
 </div>
 
+<!-- edit modal -->
                 <?php if ($is_going && $can_edit_housing): ?>
                     <div id="editHousingModal<?php echo (int)$housing['housing_id']; ?>" class="modal">
                         <div class="modal-content">
@@ -653,7 +681,7 @@ $add_housing_button = $is_going
                                 <input type="hidden" name="housing_id" value="<?php echo (int)$housing['housing_id']; ?>">
 
                                 <label>Title:</label>
-                                <input type="text" name="title" value="<?php echo h($housing['title']); ?>" required>
+                                <input type="text" name="title" maxlength="50" value="<?php echo h($housing['title']); ?>" required>
 
                                 <label>Arrival Date:</label>
                                 <input type="date" name="arrival_date" value="<?php echo h($housing['arrival_date']); ?>" required>
@@ -716,10 +744,10 @@ $add_housing_button = $is_going
                                 <input type="file" name="housing_image" accept="image/*">
 
                                 <label>Link (optional):</label>
-                                <input type="url" name="link" value="<?php echo h($housing['link'] ?? ''); ?>">
+                                <input type="url" name="link" maxlength="500" value="<?php echo h($housing['link'] ?? ''); ?>">
 
                                 <label>Notes:</label>
-                                <textarea name="notes"><?php echo h($housing['notes'] ?? ''); ?></textarea>
+                                <textarea name="notes" maxlength="500"><?php echo h($housing['notes'] ?? ''); ?></textarea>
 
                                 <button type="submit" class="btn">Save Changes</button>
                             </form>
@@ -731,6 +759,7 @@ $add_housing_button = $is_going
     <?php endif; ?>
 </div>
 
+<!-- add modal -->
 <div id="housingModal" class="modal">
     <div class="modal-content">
         <span class="close-btn" onclick="closeModal('housingModal')">&times;</span>
@@ -740,7 +769,7 @@ $add_housing_button = $is_going
             <input type="hidden" name="action" value="add_housing">
 
             <label>Title:</label>
-            <input type="text" name="title" required>
+<input type="text" name="title" maxlength="50" required>
 
             <label>Arrival Date:</label>
             <input type="date" name="arrival_date" required>
@@ -793,10 +822,10 @@ $add_housing_button = $is_going
             <input type="file" name="housing_image" accept="image/*">
 
             <label>Link (optional):</label>
-            <input type="url" name="link">
+            <input type="url" name="link" maxlength="500">
 
             <label>Notes:</label>
-            <textarea name="notes"></textarea>
+            <textarea name="notes" maxlength="500"></textarea>
 
             <button type="submit" class="btn">Save Housing</button>
         </form>
@@ -806,6 +835,8 @@ $add_housing_button = $is_going
 <?php render_rsvp_modal($going_users, $not_going_users); ?>
 
 <script>
+
+// modal functions
 function openModal(id) {
     const modal = document.getElementById(id);
 

@@ -7,7 +7,7 @@ $user_id = $_SESSION['user_id'] ?? 0;
 $search_query = isset($_GET['q']) ? trim($_GET['q']) : '';
 $message = "";
 
-/* ===================== HANDLE JOIN REQUEST ===================== */
+# join request handler
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_join'])) {
     $group_id = intval($_POST['group_id'] ?? 0);
 
@@ -21,11 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_join'])) {
     }
 }
 
-/* ===================== FETCH GROUPS USER SHOULD NOT SEE ===================== */
-/* excludes:
-   - groups user owns
-   - groups user is already approved in
-*/
+# Fetch groups that the user can join (not owned and not already a member)
 $params = [$user_id, $user_id];
 $sql = "
     SELECT
@@ -59,7 +55,7 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $groups = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-/* ===================== FETCH MEMBER COUNTS ===================== */
+# fetch member counts for displayed groups
 $group_ids = array_column($groups, 'group_id');
 $members_count = [];
 
